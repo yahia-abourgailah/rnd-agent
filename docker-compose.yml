@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: launch_intel
+      POSTGRES_PASSWORD: launch_intel
+      POSTGRES_DB: launch_intel
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U launch_intel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # TODO(phase-later): enable once the dashboard is wired up against Postgres.
+  # metabase:
+  #   image: metabase/metabase:latest
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - postgres
+
+  # TODO(phase-later): the app container itself — not needed while iterating
+  # locally with `make dev` against the services above.
+  # app:
+  #   build: .
+  #   env_file: .env
+  #   depends_on:
+  #     - postgres
+  #     - redis
+
+volumes:
+  pgdata:

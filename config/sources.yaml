@@ -1,0 +1,49 @@
+# Source registry — adding a new source is one adapter file + one entry here.
+# Each entry is loaded into a models.source.SourceConfig.
+#
+# adapter_name must match a class registered in
+# src/launch_intel/watch/adapters/__init__.py
+
+sources:
+  - name: generic_developer_demo
+    tier: 1
+    source_type: developer_site
+    urls:
+      - "https://example-developer.com/launches"
+    crawl_frequency: "30m"
+    adapter_name: generic_developer_site
+
+  # TODO(phase-later): aggregator adapters are stubbed under
+  # watch/adapters/{nawy,property_finder,sodic,palm_hills}.py — uncomment and
+  # fill in real URLs once those adapters are implemented.
+  # - name: nawy
+  #   tier: 2
+  #   source_type: aggregator
+  #   urls:
+  #     - "https://www.nawy.com/new-launches"
+  #   crawl_frequency: "1h"
+  #   adapter_name: nawy
+  #
+  # - name: property_finder
+  #   tier: 2
+  #   source_type: aggregator
+  #   urls:
+  #     - "https://www.propertyfinder.eg/new-projects"
+  #   crawl_frequency: "1h"
+  #   adapter_name: property_finder
+  #
+  # - name: sodic
+  #   tier: 1
+  #   source_type: developer_site
+  #   urls:
+  #     - "https://www.sodic.com/news"
+  #   crawl_frequency: "1h"
+  #   adapter_name: sodic
+  #
+  # - name: palm_hills
+  #   tier: 1
+  #   source_type: developer_site
+  #   urls:
+  #     - "https://www.palmhillsdevelopments.com/news"
+  #   crawl_frequency: "1h"
+  #   adapter_name: palm_hills
