@@ -1,26 +1,29 @@
-version: "3.9"
-
+# Base stack — shared by every environment. Intentionally does NOT publish
+# host ports (that's a dev convenience added by docker-compose.override.yml).
+#
+#   Local dev:   docker compose up -d
+#                (base + docker-compose.override.yml, auto-merged)
+#   Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Credentials default to dev values but can be overridden from the shell env
+# (or an --env-file) so staging/prod supply their own without editing this file.
 services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_USER: launch_intel
-      POSTGRES_PASSWORD: launch_intel
-      POSTGRES_DB: launch_intel
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-launch_intel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-launch_intel}
+      POSTGRES_DB: ${POSTGRES_DB:-launch_intel}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U launch_intel"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-launch_intel}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -34,15 +37,6 @@ services:
   #     - "3000:3000"
   #   depends_on:
   #     - postgres
-
-  # TODO(phase-later): the app container itself — not needed while iterating
-  # locally with `make dev` against the services above.
-  # app:
-  #   build: .
-  #   env_file: .env
-  #   depends_on:
-  #     - postgres
-  #     - redis
 
 volumes:
   pgdata:

@@ -1,0 +1,11 @@
+# DEV source registry (used when ENV=development).
+# Keep this to a single safe demo source so local runs never hammer real sites.
+
+sources:
+  - name: generic_developer_demo
+    tier: 1
+    source_type: developer_site
+    urls:
+      - "https://example-developer.com/launches"
+    crawl_frequency: "30m"
+    adapter_name: generic_developer_site

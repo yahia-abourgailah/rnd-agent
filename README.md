@@ -55,6 +55,48 @@ make crawl SOURCE=generic_developer_demo
 2. Register it in `watch/adapters/__init__.py`.
 3. Add one entry to `config/sources.yaml` pointing `adapter_name` at it.
 
+## Environments (dev / staging / production)
+
+The **same code** runs in all three environments — only configuration
+changes. Two things pick the environment:
+
+1. **`ENV_FILE`** — which env file the app loads. Defaults to `.env`.
+   `config/settings.py` reads it at startup.
+2. **`ENV`** (inside that file) — sets `settings.env`, which in turn selects
+   the source registry `config/sources.<env>.yaml` and gates
+   environment-specific behavior (e.g. `settings.is_production`).
+
+| Concern        | dev                          | staging                      | production                       |
+|----------------|------------------------------|------------------------------|----------------------------------|
+| Env file       | `.env.dev`                   | `.env.staging`               | injected env vars (secret store) |
+| Postgres/Redis | local docker-compose         | staging's own                | prod's own / managed             |
+| Sources        | `sources.development.yaml` (1 demo) | (falls back to prod list) | `sources.production.yaml`   |
+| LLM model      | `gpt-4o-mini`                | `gpt-4o`                     | `gpt-4o`                         |
+| Slack channel  | `#launch-alerts-dev`         | `#launch-alerts-staging`     | `#launch-alerts` (real)          |
+
+Templates for each are committed as `.env.dev.example`,
+`.env.staging.example`, `.env.production.example`. Copy the one you need,
+drop the `.example`, fill it in. **Real `.env*` files are gitignored** — only
+the `*.example` templates are tracked. In staging/prod, prefer injecting
+secrets as real environment variables from a secret manager rather than a
+file on disk.
+
+```bash
+# dev (default)
+cp .env.dev.example .env.dev
+make up                      # local postgres+redis
+make crawl SOURCE=generic_developer_demo
+
+# staging / prod point ENV_FILE at the right file (or set real env vars)
+make crawl ENV_FILE=.env.staging SOURCE=...
+make up-prod                 # base + docker-compose.prod.yml overlay
+```
+
+**Promotion flow:** `feature branch → main → (auto-deploy) staging →
+(manual approve / tag) production`. Build one image, promote the *same*
+image forward — never build a separate prod artifact. DB migrations
+(Alembic, once `db/tables.py` exists) run per-environment on deploy.
+
 ## Shared contract
 
 See `src/launch_intel/models/launch.py` for the canonical `Launch` schema.

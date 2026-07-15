@@ -3,7 +3,7 @@ import logging
 import yaml
 from prefect import task
 
-from config.settings import SOURCES_REGISTRY_PATH
+from config.settings import settings
 from launch_intel.extract import extract_launch
 from launch_intel.models import Candidate, Launch, RawPage, SourceConfig
 from launch_intel.watch import BaseAdapter, ChangeDetector
@@ -17,7 +17,8 @@ def _build_adapter(source: SourceConfig) -> BaseAdapter:
 
 
 @task
-def load_source_config(source_name: str, registry_path=SOURCES_REGISTRY_PATH) -> SourceConfig:
+def load_source_config(source_name: str, registry_path=None) -> SourceConfig:
+    registry_path = registry_path or settings.sources_registry_path
     data = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
     for entry in data["sources"]:
         if entry["name"] == source_name:

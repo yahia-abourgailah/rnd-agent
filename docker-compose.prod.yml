@@ -1,0 +1,32 @@
+# Production overlay. Apply explicitly on top of the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Because it names files explicitly with -f, docker-compose.override.yml is
+# NOT loaded — so postgres/redis stay unexposed (no host ports).
+#
+# Differences from dev:
+#   - restart: always so services recover after a crash/reboot.
+#   - The app container is built and run here; ENV=production is injected so
+#     settings.env selects the production source registry. Secrets come from
+#     the platform's env/secret store (leave ENV_FILE unset so real env wins).
+#
+# NOTE: in most real deployments you'd use MANAGED Postgres/Redis (RDS,
+# Cloud SQL, ElastiCache, etc.) and drop these two services here entirely,
+# pointing DATABASE_URL / REDIS_URL at the managed endpoints.
+services:
+  postgres:
+    restart: always
+
+  redis:
+    restart: always
+
+  app:
+    build: .
+    restart: always
+    environment:
+      ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

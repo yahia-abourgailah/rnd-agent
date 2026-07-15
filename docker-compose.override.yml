@@ -1,0 +1,14 @@
+# Dev-only overlay. Docker Compose loads this AUTOMATICALLY on top of
+# docker-compose.yml for `docker compose up` — so local development gets
+# postgres/redis published on localhost with zero extra flags.
+#
+# It is NOT applied in production (the prod command names its files
+# explicitly with -f and does not include this one).
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"

@@ -1,0 +1,33 @@
+# PRODUCTION source registry (used when ENV=production).
+# The real competitor sources. Entries stay commented until their adapter is
+# implemented (Phase 2+) — an uncommented entry whose adapter still raises
+# NotImplementedError would fail the crawl. Until then, production crawls
+# nothing (empty list) rather than crashing.
+#
+# TODO(phase2+): move each block below into `sources:` as its adapter lands.
+#   - name: nawy
+#     tier: 2
+#     source_type: aggregator
+#     urls: ["https://www.nawy.com/new-launches"]
+#     crawl_frequency: "1h"
+#     adapter_name: nawy
+#   - name: property_finder
+#     tier: 2
+#     source_type: aggregator
+#     urls: ["https://www.propertyfinder.eg/new-projects"]
+#     crawl_frequency: "1h"
+#     adapter_name: property_finder
+#   - name: sodic
+#     tier: 1
+#     source_type: developer_site
+#     urls: ["https://www.sodic.com/news"]
+#     crawl_frequency: "1h"
+#     adapter_name: sodic
+#   - name: palm_hills
+#     tier: 1
+#     source_type: developer_site
+#     urls: ["https://www.palmhillsdevelopments.com/news"]
+#     crawl_frequency: "1h"
+#     adapter_name: palm_hills
+
+sources: []
