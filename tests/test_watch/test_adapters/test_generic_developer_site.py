@@ -7,7 +7,7 @@ from launch_intel.models import ContentType, RawPage, SourceConfig, SourceTier, 
 from launch_intel.watch.adapters.generic_developer_site import GenericDeveloperSiteAdapter
 
 FIXTURE_PATH = (
-    Path(__file__).resolve().parent.parent / "fixtures" / "generic_developer_listing.html"
+    Path(__file__).resolve().parent.parent.parent / "fixtures" / "generic_developer_listing.html"
 )
 
 
