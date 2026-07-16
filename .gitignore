@@ -8,3 +8,5 @@ __pycache__/
 !.env.*.example
 .crawl_state.json
 *.egg-info/
+# Leader-only planning artifacts — not tracked
+docs/rnd-agent-tasks.csv
