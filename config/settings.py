@@ -35,8 +35,16 @@ class Settings(BaseSettings):
     # --- LLM extraction (ScrapeGraphAI) ---
     openai_api_key: str = ""
     # ScrapeGraphAI expects a provider-prefixed model id, e.g. "openai/gpt-4o-mini"
-    # or "ollama/llama3" for a local model.
+    # or "ollama/llama3" for a local model. Keep the "openai/" prefix for any
+    # OpenAI-COMPATIBLE endpoint (vLLM, LiteLLM, an internal gateway) — the
+    # prefix selects the API dialect, not the vendor.
     extraction_model: str = "openai/gpt-4o-mini"
+    # Point at a self-hosted / company gateway that speaks the OpenAI API.
+    # Empty means "use the real OpenAI endpoint".
+    llm_base_url: str = ""
+    # Context window for the model. Only needed for models ScrapeGraphAI does
+    # not know (it defaults to 8192 and logs a warning otherwise).
+    llm_model_tokens: int | None = None
 
     # --- Slack (TODO(phase-later)) ---
     slack_bot_token: str = ""

@@ -42,11 +42,20 @@ class Scraper(Protocol):
 
 def build_graph_config() -> dict:
     """ScrapeGraphAI config assembled from settings — no hardcoded secrets."""
+    llm: dict = {
+        "api_key": settings.openai_api_key,
+        "model": settings.extraction_model,
+    }
+    # Optional: route to an OpenAI-compatible endpoint (self-hosted model,
+    # company gateway) instead of api.openai.com.
+    if settings.llm_base_url:
+        llm["base_url"] = settings.llm_base_url
+    # Optional: declare the context window for models ScrapeGraphAI doesn't know.
+    if settings.llm_model_tokens:
+        llm["model_tokens"] = settings.llm_model_tokens
+
     return {
-        "llm": {
-            "api_key": settings.openai_api_key,
-            "model": settings.extraction_model,
-        },
+        "llm": llm,
         "verbose": False,
         # We already fetched the content ourselves (watch/fetcher.py), so
         # ScrapeGraphAI never needs to open a browser here.
