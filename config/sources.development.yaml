@@ -1,7 +1,16 @@
 # DEV source registry (used when ENV=development).
-# Keep this to a single safe demo source so local runs never hammer real sites.
+# Keep this small so local runs never hammer real sites.
 
 sources:
+  - name: nawy
+    tier: 2
+    source_type: aggregator
+    urls:
+      - "https://www.nawy.com/new-launches"
+    crawl_frequency: "1h"
+    rate_limit_seconds: 3
+    adapter_name: nawy
+
   - name: generic_developer_demo
     tier: 1
     source_type: developer_site

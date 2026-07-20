@@ -10,3 +10,4 @@ __pycache__/
 *.egg-info/
 # Leader-only planning artifacts — not tracked
 docs/rnd-agent-tasks.csv
+output/

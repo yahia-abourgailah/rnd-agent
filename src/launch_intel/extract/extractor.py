@@ -35,10 +35,16 @@ class ExtractedFields(BaseModel):
 
     @field_validator("property_types", mode="before")
     @classmethod
-    def _null_means_empty(cls, value):
-        """LLMs routinely emit null for an absent list rather than []. Treat
-        that as 'none mentioned' instead of failing the whole extraction."""
-        return [] if value is None else value
+    def _coerce_to_list(cls, value):
+        """Real models are loose with list fields: gemma-4 emits null for an
+        absent list and a bare string when there is exactly one value. Coerce
+        both rather than failing an entire page's extraction."""
+        if value is None:
+            return []
+        if isinstance(value, str):
+            # single value, or a comma-separated string
+            return [part.strip() for part in value.split(",") if part.strip()]
+        return value
 
     @field_validator("confidence", mode="before")
     @classmethod
