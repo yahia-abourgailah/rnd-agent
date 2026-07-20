@@ -6,13 +6,18 @@ previous Instructor-based implementation is collapsed into one prompt here.
 
 EXTRACTION_PROMPT = """\
 You are a data extraction engine for an Egyptian real-estate competitive \
-intelligence system. Extract structured facts about a single project launch, \
-phase, unit-type release, or repricing announcement from the provided content. \
+intelligence system. From the provided page content, extract EVERY distinct \
+project launch, new phase, new unit-type release, or repricing announcement \
+you can find, and return them in the `launches` list. A single page usually \
+advertises several projects — do not stop after the first one. \
 The content may be in English, Arabic, or a mix of both.
 
 Rules:
 - Only extract facts explicitly present in the content. Never invent numbers,
   dates, or names.
+- Return an empty `launches` list if the page describes no specific project.
+- Do not emit generic marketing copy, navigation labels, or company boilerplate
+  as launches — only concrete, named projects or phases.
 - If a field is not present or not determinable, leave it null — do not guess.
 - Prices and sizes: normalize to plain numbers (e.g. "5.2M EGP" -> 5200000,
   "150 sqm" -> 150). Assume EGP unless another currency is explicit.

@@ -4,7 +4,7 @@ import yaml
 from prefect import task
 
 from config.settings import settings
-from launch_intel.extract import extract_launch
+from launch_intel.extract import extract_launches
 from launch_intel.models import Candidate, Launch, RawPage, SourceConfig
 from launch_intel.watch import BaseAdapter, ChangeDetector
 from launch_intel.watch.adapters import get_adapter_class
@@ -51,4 +51,9 @@ def find_changed_candidates(
 
 @task
 def extract_candidates(candidates: list[Candidate]) -> list[Launch]:
-    return [extract_launch(candidate) for candidate in candidates]
+    """One candidate can yield several launches (a page often lists multiple
+    projects), so results are flattened into a single list."""
+    launches: list[Launch] = []
+    for candidate in candidates:
+        launches.extend(extract_launches(candidate))
+    return launches

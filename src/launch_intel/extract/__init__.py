@@ -1,3 +1,7 @@
-from launch_intel.extract.extractor import ExtractedFields, extract_launch
+from launch_intel.extract.extractor import (
+    ExtractedFields,
+    ExtractedLaunches,
+    extract_launches,
+)
 
-__all__ = ["extract_launch", "ExtractedFields"]
+__all__ = ["extract_launches", "ExtractedFields", "ExtractedLaunches"]

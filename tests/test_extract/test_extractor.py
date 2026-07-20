@@ -1,7 +1,7 @@
 from datetime import datetime
 from unittest.mock import MagicMock
 
-from launch_intel.extract.extractor import ExtractedFields, extract_launch
+from launch_intel.extract.extractor import ExtractedFields, ExtractedLaunches, extract_launches
 from launch_intel.models import Candidate, ContentType, LaunchType, SourceType
 
 
@@ -16,11 +16,11 @@ def _make_candidate() -> Candidate:
     )
 
 
-def _fake_scraper(extracted: ExtractedFields) -> MagicMock:
+def _fake_scraper(*extracted: ExtractedFields) -> MagicMock:
     """Stands in for ScrapeGraphAI's SmartScraperGraph — returns a plain dict
     like the real one does, so validation is exercised too."""
     scraper = MagicMock()
-    scraper.run.return_value = extracted.model_dump()
+    scraper.run.return_value = ExtractedLaunches(launches=list(extracted)).model_dump()
     return scraper
 
 
@@ -36,7 +36,9 @@ def test_extract_launch_maps_fields_and_fills_context():
     )
     candidate = _make_candidate()
 
-    launch = extract_launch(candidate, scraper=_fake_scraper(extracted))
+    launches = extract_launches(candidate, scraper=_fake_scraper(extracted))
+    assert len(launches) == 1
+    launch = launches[0]
 
     assert launch.project_name == "Marina Heights"
     assert launch.launch_type == LaunchType.NEW_PHASE
@@ -63,7 +65,9 @@ def test_extract_launch_leaves_unlisted_developer_and_zone_untouched():
     )
     candidate = _make_candidate()
 
-    launch = extract_launch(candidate, scraper=_fake_scraper(extracted))
+    launches = extract_launches(candidate, scraper=_fake_scraper(extracted))
+    assert len(launches) == 1
+    launch = launches[0]
 
     assert launch.developer == "Some New Developer"
     assert launch.zone == "Some Unlisted Zone"
@@ -77,7 +81,9 @@ def test_extract_launch_low_confidence_is_still_returned_not_dropped():
     )
     candidate = _make_candidate()
 
-    launch = extract_launch(candidate, scraper=_fake_scraper(extracted))
+    launches = extract_launches(candidate, scraper=_fake_scraper(extracted))
+    assert len(launches) == 1
+    launch = launches[0]
 
     assert launch.confidence == 0.05
     assert launch.project_name == "Ambiguous Mention"
@@ -93,8 +99,12 @@ def test_extract_launch_is_fed_local_content_not_a_url(monkeypatch):
             captured["source"] = source
 
         def run(self):
-            return ExtractedFields(
-                project_name="X", launch_type=LaunchType.NEW_PROJECT, confidence=0.5
+            return ExtractedLaunches(
+                launches=[
+                    ExtractedFields(
+                        project_name="X", launch_type=LaunchType.NEW_PROJECT, confidence=0.5
+                    )
+                ]
             ).model_dump()
 
     import scrapegraphai.graphs
@@ -102,7 +112,65 @@ def test_extract_launch_is_fed_local_content_not_a_url(monkeypatch):
     monkeypatch.setattr(scrapegraphai.graphs, "SmartScraperGraph", FakeGraph)
 
     candidate = _make_candidate()
-    extract_launch(candidate)
+    extract_launches(candidate)
 
     assert captured["source"] == candidate.text
     assert not captured["source"].startswith("http")
+
+
+def test_one_page_yields_multiple_launches():
+    """A developer homepage typically advertises several projects at once."""
+    candidate = _make_candidate()
+    launches = extract_launches(
+        candidate,
+        scraper=_fake_scraper(
+            ExtractedFields(
+                project_name="Hacienda Blue", launch_type=LaunchType.NEW_PROJECT, confidence=0.8
+            ),
+            ExtractedFields(
+                project_name="Palm Hills One", launch_type=LaunchType.NEW_PHASE, confidence=0.7
+            ),
+        ),
+    )
+
+    assert [launch.project_name for launch in launches] == ["Hacienda Blue", "Palm Hills One"]
+    # Every launch keeps the same source context and its own identity
+    assert {launch.source_url for launch in launches} == {candidate.source_url}
+    assert launches[0].id != launches[1].id
+
+
+def test_page_with_no_launches_returns_empty_list():
+    launches = extract_launches(_make_candidate(), scraper=_fake_scraper())
+    assert launches == []
+
+
+def test_null_property_types_from_llm_becomes_empty_list():
+    """Real models (gemma-4) emit `null` for absent lists rather than [].
+    Found against live Nawy data — one null must not fail a whole page."""
+    raw = {
+        "launches": [
+            {
+                "project_name": "Southmed",
+                "launch_type": "new_project",
+                "property_types": None,
+                "confidence": 1.0,
+            }
+        ]
+    }
+    scraper = MagicMock()
+    scraper.run.return_value = raw
+
+    launches = extract_launches(_make_candidate(), scraper=scraper)
+
+    assert len(launches) == 1
+    assert launches[0].property_types == []
+
+
+def test_missing_confidence_defaults_rather_than_dropping_launch():
+    raw = {"launches": [{"project_name": "Salt Marina", "launch_type": "new_project"}]}
+    scraper = MagicMock()
+    scraper.run.return_value = raw
+
+    launches = extract_launches(_make_candidate(), scraper=scraper)
+
+    assert launches[0].confidence == 0.5

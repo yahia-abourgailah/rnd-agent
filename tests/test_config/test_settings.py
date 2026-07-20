@@ -40,39 +40,34 @@ def test_registry_path_falls_back_when_env_file_missing(monkeypatch):
     assert Settings(_env_file=None).sources_registry_path == CONFIG_DIR / "sources.yaml"
 
 
-def test_graph_config_omits_base_url_by_default(monkeypatch):
-    """No base_url means ScrapeGraphAI talks to the real OpenAI endpoint."""
-    monkeypatch.delenv("LLM_BASE_URL", raising=False)
-    monkeypatch.delenv("LLM_MODEL_TOKENS", raising=False)
-    from launch_intel.extract.extractor import build_graph_config
+def test_graph_config_omits_base_url_when_unset(monkeypatch):
+    """No base_url means ScrapeGraphAI talks to the real OpenAI endpoint.
 
-    assert "base_url" not in build_graph_config()["llm"]
+    Patches the live settings object rather than the environment, so the result
+    does not depend on whatever a developer happens to have in their .env.
+    """
+    from launch_intel.extract import extractor
+
+    monkeypatch.setattr(extractor.settings, "llm_base_url", "")
+    monkeypatch.setattr(extractor.settings, "llm_model_tokens", None)
+
+    llm = extractor.build_graph_config()["llm"]
+    assert "base_url" not in llm
+    assert "model_tokens" not in llm
 
 
 def test_graph_config_routes_to_custom_endpoint(monkeypatch):
     """A self-hosted / company gateway is selected purely by config."""
-    monkeypatch.setenv("LLM_BASE_URL", "https://llm.internal/v1")
-    monkeypatch.setenv("LLM_MODEL_TOKENS", "8192")
-    monkeypatch.setenv("EXTRACTION_MODEL", "openai/gemma-4")
+    from launch_intel.extract import extractor
 
-    import importlib
+    monkeypatch.setattr(extractor.settings, "llm_base_url", "https://llm.internal/v1")
+    monkeypatch.setattr(extractor.settings, "llm_model_tokens", 8192)
+    monkeypatch.setattr(extractor.settings, "extraction_model", "openai/gemma-4")
 
-    import config.settings as settings_module
-
-    importlib.reload(settings_module)
-    import launch_intel.extract.extractor as extractor_module
-
-    importlib.reload(extractor_module)
-
-    llm = extractor_module.build_graph_config()["llm"]
+    llm = extractor.build_graph_config()["llm"]
     assert llm["base_url"] == "https://llm.internal/v1"
     assert llm["model"] == "openai/gemma-4"
     assert llm["model_tokens"] == 8192
-
-    # restore module state for the rest of the suite
-    monkeypatch.undo()
-    importlib.reload(settings_module)
-    importlib.reload(extractor_module)
 
 
 def test_secrets_have_no_baked_in_defaults(monkeypatch):
