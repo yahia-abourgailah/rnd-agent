@@ -32,15 +32,22 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "redis://localhost:6379/1"
 
-    # --- LLM extraction ---
+    # --- LLM extraction (ScrapeGraphAI) ---
     openai_api_key: str = ""
-    extraction_model: str = "gpt-4o-mini"
+    # ScrapeGraphAI expects a provider-prefixed model id, e.g. "openai/gpt-4o-mini"
+    # or "ollama/llama3" for a local model.
+    extraction_model: str = "openai/gpt-4o-mini"
 
     # --- Slack (TODO(phase-later)) ---
     slack_bot_token: str = ""
     slack_alert_channel: str = "#launch-alerts"
 
     # --- Crawling ---
+    # User-Agent sent on every request (both httpx and Playwright). Neutral by
+    # design: it identifies the traffic as an automated research crawler without
+    # naming the operator. Override via USER_AGENT in .env per environment; put
+    # a reachable contact address there so site owners can reach the team.
+    user_agent: str = "MarketIntelBot/1.0 (+mailto:research-bot@example.com)"
     playwright_headless: bool = True
     default_request_timeout_seconds: float = 30.0
     default_rate_limit_per_host_seconds: float = Field(

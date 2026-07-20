@@ -1,24 +1,27 @@
-EXTRACTION_SYSTEM_PROMPT = """\
+"""
+Extraction prompts. ScrapeGraphAI takes a single instruction prompt plus the
+output schema (see extract/extractor.py), so the system/user split of the
+previous Instructor-based implementation is collapsed into one prompt here.
+"""
+
+EXTRACTION_PROMPT = """\
 You are a data extraction engine for an Egyptian real-estate competitive \
-intelligence system. You read a raw snippet from a developer or aggregator \
-website — it may be in English, Arabic, or a mix of both — and extract \
-structured facts about a single project launch, phase, unit-type release, \
-or repricing announcement.
+intelligence system. Extract structured facts about a single project launch, \
+phase, unit-type release, or repricing announcement from the provided content. \
+The content may be in English, Arabic, or a mix of both.
 
 Rules:
-- Only extract facts explicitly present in the text. Never invent numbers,
+- Only extract facts explicitly present in the content. Never invent numbers,
   dates, or names.
 - If a field is not present or not determinable, leave it null — do not guess.
 - Prices and sizes: normalize to plain numbers (e.g. "5.2M EGP" -> 5200000,
   "150 sqm" -> 150). Assume EGP unless another currency is explicit.
+- Keep `delivery_date` as the source's own wording (e.g. "Q4 2027",
+  "under construction") rather than converting it to a calendar date.
 - Arabic real-estate terms map as follows (non-exhaustive): \
 شقة=apartment, دوبلكس=duplex, بنتهاوس=penthouse, تاون هاوس=townhouse, \
 توين هاوس=twin_house, فيلا=villa, شاليه=chalet, تجاري=commercial.
-- `confidence` reflects how certain you are that this snippet describes a
+- `confidence` reflects how certain you are that this content describes a
   real, specific launch event (as opposed to generic marketing copy) —
   1.0 = explicit and unambiguous, 0.0 = pure guesswork.
 """
-
-
-def build_extraction_user_prompt(text: str) -> str:
-    return f"Extract the launch details from this content:\n\n{text}"

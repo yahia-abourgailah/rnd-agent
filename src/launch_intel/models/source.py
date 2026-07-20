@@ -29,3 +29,4 @@ class SourceConfig(BaseModel):
     urls: list[str] = Field(min_length=1)
     crawl_frequency: str  # e.g. "*/30 * * * *" (cron) or "30m" (interval shorthand)
     adapter_name: str  # must match a BaseAdapter registered under watch/adapters/
+    rate_limit_seconds: float | None = None  # per-source; None → global default

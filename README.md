@@ -29,7 +29,7 @@ structure to build against without breaking imports.
 |----------|-----------------------------------------------------|
 | models   | ✅ implemented — the shared contract                 |
 | watch    | ✅ fetcher, change_detector, base adapter + 1 adapter |
-| extract  | ✅ Instructor-based extractor + prompts               |
+| extract  | ✅ ScrapeGraphAI-based extractor + prompts            |
 | pipeline | ✅ thin Prefect flow wiring watch → extract           |
 | dedup    | 🚧 stubbed only                                       |
 | db       | 🚧 stubbed only                                       |
@@ -71,7 +71,7 @@ changes. Two things pick the environment:
 | Env file       | `.env.dev`                   | `.env.staging`               | injected env vars (secret store) |
 | Postgres/Redis | local docker-compose         | staging's own                | prod's own / managed             |
 | Sources        | `sources.development.yaml` (1 demo) | (falls back to prod list) | `sources.production.yaml`   |
-| LLM model      | `gpt-4o-mini`                | `gpt-4o`                     | `gpt-4o`                         |
+| LLM model      | `openai/gpt-4o-mini`         | `openai/gpt-4o`              | `openai/gpt-4o`                  |
 | Slack channel  | `#launch-alerts-dev`         | `#launch-alerts-staging`     | `#launch-alerts` (real)          |
 
 Templates for each are committed as `.env.dev.example`,

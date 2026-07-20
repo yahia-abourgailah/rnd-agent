@@ -1,12 +1,11 @@
 from datetime import datetime, timezone
+from typing import Protocol
 
-import instructor
-from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from config.settings import settings
 from launch_intel.extract.normalize import normalize_developer, normalize_zone
-from launch_intel.extract.prompts import EXTRACTION_SYSTEM_PROMPT, build_extraction_user_prompt
+from launch_intel.extract.prompts import EXTRACTION_PROMPT
 from launch_intel.models import Candidate, Launch, LaunchType, PropertyType, SizeRange
 
 
@@ -32,32 +31,57 @@ class ExtractedFields(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
-_client = None
+class Scraper(Protocol):
+    """
+    Minimal seam over ScrapeGraphAI so tests can substitute a fake and run
+    offline without an API key. Any callable returning the extracted dict works.
+    """
+
+    def run(self) -> dict: ...
 
 
-def _get_client():
-    global _client
-    if _client is None:
-        _client = instructor.from_openai(OpenAI(api_key=settings.openai_api_key))
-    return _client
+def build_graph_config() -> dict:
+    """ScrapeGraphAI config assembled from settings — no hardcoded secrets."""
+    return {
+        "llm": {
+            "api_key": settings.openai_api_key,
+            "model": settings.extraction_model,
+        },
+        "verbose": False,
+        # We already fetched the content ourselves (watch/fetcher.py), so
+        # ScrapeGraphAI never needs to open a browser here.
+        "headless": True,
+    }
 
 
-def extract_launch(candidate: Candidate, client=None) -> Launch:
+def _default_scraper(candidate: Candidate) -> Scraper:
+    from scrapegraphai.graphs import SmartScraperGraph
+
+    # `source` is the already-fetched text, NOT a URL. This is deliberate: the
+    # watch stage fetches cheaply and change_detector filters out unchanged
+    # pages, so the expensive LLM pass only ever runs on new content. Handing
+    # ScrapeGraphAI a URL here would re-fetch and defeat that cost control.
+    return SmartScraperGraph(
+        prompt=EXTRACTION_PROMPT,
+        source=candidate.text,
+        config=build_graph_config(),
+        schema=ExtractedFields,
+    )
+
+
+def extract_launch(candidate: Candidate, scraper: Scraper | None = None) -> Launch:
     """
     Run LLM extraction over a single candidate snippet and assemble a full
     Launch record. Low-confidence results are still returned — filtering
     on `confidence` is a decision for the caller (dedup/notify, in a later
     phase), not something extraction itself should silently drop.
     """
-    client = client or _get_client()
-    fields: ExtractedFields = client.chat.completions.create(
-        model=settings.extraction_model,
-        response_model=ExtractedFields,
-        messages=[
-            {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
-            {"role": "user", "content": build_extraction_user_prompt(candidate.text)},
-        ],
-    )
+    scraper = scraper or _default_scraper(candidate)
+    result = scraper.run()
+
+    # ScrapeGraphAI returns a plain dict shaped like the schema; validate it
+    # back into our model so downstream code always gets typed, checked data.
+    fields = result if isinstance(result, ExtractedFields) else ExtractedFields.model_validate(result)
 
     field_values = fields.model_dump()
     field_values["developer"] = normalize_developer(field_values["developer"])

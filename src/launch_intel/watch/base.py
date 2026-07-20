@@ -19,7 +19,7 @@ class BaseAdapter(ABC):
 
     def __init__(self, source: SourceConfig, fetcher: Fetcher | None = None):
         self.source = source
-        self.fetcher = fetcher or Fetcher()
+        self.fetcher = fetcher or Fetcher(rate_limit_seconds=source.rate_limit_seconds)
 
     @abstractmethod
     async def fetch_pages(self) -> list[RawPage]:

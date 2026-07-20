@@ -4,12 +4,23 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import httpx
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from config.settings import settings
 from launch_intel.models import ContentType, RawPage
 
-_RETRYABLE = (httpx.TransportError, httpx.HTTPStatusError, TimeoutError)
+_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+
+def _is_retryable(exc: Exception) -> bool:
+    # transport failures and timeouts: always worth a retry
+    if isinstance(exc, (httpx.TransportError, TimeoutError)):
+        return True
+    # HTTP errors: only server-side / rate-limit codes (a 404 won't fix itself)
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in _RETRYABLE_STATUS
+    # Playwright timeout (imported lazily so httpx-only installs don't need it)
+    return exc.__class__.__name__ == "TimeoutError" and "playwright" in type(exc).__module__
 
 
 def _retrying():
@@ -17,7 +28,7 @@ def _retrying():
         reraise=True,
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type(_RETRYABLE),
+        retry=retry_if_exception(_is_retryable),
     )
 
 
@@ -63,7 +74,10 @@ class Fetcher:
     async def fetch_json(self, url: str, **httpx_kwargs) -> RawPage:
         """Fetch a JSON/plain HTTP endpoint via httpx. No JS execution."""
         await self._rate_limiter.wait(url)
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+        async with httpx.AsyncClient(
+            timeout=self.timeout_seconds,
+            headers={"User-Agent": settings.user_agent},
+        ) as client:
             response = await client.get(url, **httpx_kwargs)
             response.raise_for_status()
         return RawPage(
@@ -86,7 +100,8 @@ class Fetcher:
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(headless=settings.playwright_headless)
             try:
-                page = await browser.new_page()
+                context = await browser.new_context(user_agent=settings.user_agent)
+                page = await context.new_page()
                 await page.goto(url, timeout=self.timeout_seconds * 1000)
                 if wait_for_selector:
                     await page.wait_for_selector(

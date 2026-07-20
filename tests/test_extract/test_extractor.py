@@ -16,10 +16,12 @@ def _make_candidate() -> Candidate:
     )
 
 
-def _fake_client(extracted: ExtractedFields) -> MagicMock:
-    client = MagicMock()
-    client.chat.completions.create.return_value = extracted
-    return client
+def _fake_scraper(extracted: ExtractedFields) -> MagicMock:
+    """Stands in for ScrapeGraphAI's SmartScraperGraph — returns a plain dict
+    like the real one does, so validation is exercised too."""
+    scraper = MagicMock()
+    scraper.run.return_value = extracted.model_dump()
+    return scraper
 
 
 def test_extract_launch_maps_fields_and_fills_context():
@@ -34,7 +36,7 @@ def test_extract_launch_maps_fields_and_fills_context():
     )
     candidate = _make_candidate()
 
-    launch = extract_launch(candidate, client=_fake_client(extracted))
+    launch = extract_launch(candidate, scraper=_fake_scraper(extracted))
 
     assert launch.project_name == "Marina Heights"
     assert launch.launch_type == LaunchType.NEW_PHASE
@@ -61,7 +63,7 @@ def test_extract_launch_leaves_unlisted_developer_and_zone_untouched():
     )
     candidate = _make_candidate()
 
-    launch = extract_launch(candidate, client=_fake_client(extracted))
+    launch = extract_launch(candidate, scraper=_fake_scraper(extracted))
 
     assert launch.developer == "Some New Developer"
     assert launch.zone == "Some Unlisted Zone"
@@ -75,7 +77,32 @@ def test_extract_launch_low_confidence_is_still_returned_not_dropped():
     )
     candidate = _make_candidate()
 
-    launch = extract_launch(candidate, client=_fake_client(extracted))
+    launch = extract_launch(candidate, scraper=_fake_scraper(extracted))
 
     assert launch.confidence == 0.05
     assert launch.project_name == "Ambiguous Mention"
+
+
+def test_extract_launch_is_fed_local_content_not_a_url(monkeypatch):
+    """Cost-control guard: ScrapeGraphAI must receive the already-fetched text,
+    never the URL — otherwise it re-fetches and bypasses change detection."""
+    captured = {}
+
+    class FakeGraph:
+        def __init__(self, prompt, source, config, schema):
+            captured["source"] = source
+
+        def run(self):
+            return ExtractedFields(
+                project_name="X", launch_type=LaunchType.NEW_PROJECT, confidence=0.5
+            ).model_dump()
+
+    import scrapegraphai.graphs
+
+    monkeypatch.setattr(scrapegraphai.graphs, "SmartScraperGraph", FakeGraph)
+
+    candidate = _make_candidate()
+    extract_launch(candidate)
+
+    assert captured["source"] == candidate.text
+    assert not captured["source"].startswith("http")
