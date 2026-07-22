@@ -148,3 +148,19 @@ def test_empty_or_unparseable_payload_yields_nothing(source):
 
 def test_missing_next_data_yields_no_records():
     assert NawyAdapter.extract_launch_records("<html><body>nothing</body></html>") == []
+
+
+def test_unpublished_price_is_absent_not_zero():
+    """Nawy sends minPrice 0 when a launch has no published price. Storing 0
+    would read as 'free' and sort to the top of any cheapest-first view."""
+    records = NawyAdapter.extract_launch_records(LISTING.read_text(encoding="utf-8"))
+    by_name = {r["project_name"]: r for r in records}
+
+    # Elea has no published price in the fixture
+    assert "price_from" not in by_name["Elea - Azha North"]
+    assert "currency" not in by_name["Elea - Azha North"]
+    # ...while a priced launch keeps both
+    assert by_name["Southmed"]["price_from"] == 6000000
+    assert by_name["Southmed"]["currency"] == "EGP"
+
+    assert all(r.get("price_from") != 0 for r in records)

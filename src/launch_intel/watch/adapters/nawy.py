@@ -103,6 +103,12 @@ class NawyAdapter(BaseAdapter):
                 for theirs, ours in _FIELD_MAP.items()
                 if result.get(theirs) is not None
             }
+            # Nawy sends minPrice 0 for launches whose price is not published
+            # yet. Passing that through would read as "free" and sort to the
+            # top of any cheapest-first view, so drop it: absent, not zero.
+            if not record.get("price_from"):
+                record.pop("price_from", None)
+                record.pop("currency", None)
             # The launch id doubles as the compound id in Nawy's API.
             record["compound_id"] = result.get("id")
             records.append(record)
