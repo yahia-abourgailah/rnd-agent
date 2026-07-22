@@ -23,6 +23,9 @@ class PropertyType(str, Enum):
     VILLA = "villa"
     CHALET = "chalet"
     COMMERCIAL = "commercial"
+    STUDO = "studio"
+    LOFT = "loft"
+    CABIN = "cabin"
 
 
 class SizeRange(BaseModel):
