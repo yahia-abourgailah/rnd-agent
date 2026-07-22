@@ -4,9 +4,10 @@ import yaml
 from prefect import task
 
 from config.settings import settings
+from launch_intel.db.repository import save_launches, store_fetch
 from launch_intel.extract import extract_launches
 from launch_intel.models import Candidate, Launch, RawPage, SourceConfig
-from launch_intel.watch import BaseAdapter, ChangeDetector
+from launch_intel.watch import BaseAdapter, ChangeDetector, hash_content
 from launch_intel.watch.adapters import get_adapter_class
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,13 @@ def find_changed_candidates(
     adapter = _build_adapter(source)
     candidates: list[Candidate] = []
     for page in pages:
-        if not detector.has_changed(page.url, page.content):
+        changed = detector.has_changed(page.url, page.content)
+        # Persist BEFORE deciding what to do with it. Competitor sites
+        # overwrite their pages, so a payload we fetched but didn't store is
+        # unrecoverable — and every stored page is a test case for future
+        # prompt changes. Unchanged pages cost only a fetch_log row.
+        store_fetch(page, source.name, hash_content(page.content), changed)
+        if not changed:
             logger.info("No change detected for %s, skipping", page.url)
             continue
         candidates.extend(adapter.parse_candidates(page))
@@ -57,3 +64,12 @@ def extract_candidates(candidates: list[Candidate]) -> list[Launch]:
     for candidate in candidates:
         launches.extend(extract_launches(candidate))
     return launches
+
+
+@task
+def persist_launches(launches: list[Launch]) -> int:
+    """TODO(phase2): dedup runs before this, so repeat sightings of the same
+    launch merge into one row instead of inserting a duplicate."""
+    saved = save_launches(launches)
+    logger.info("Saved %d launches", saved)
+    return saved

@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import sys
 
@@ -10,6 +9,7 @@ from launch_intel.pipeline.tasks import (
     fetch_source_pages,
     find_changed_candidates,
     load_source_config,
+    persist_launches,
 )
 from launch_intel.watch import ChangeDetector
 
@@ -17,18 +17,18 @@ logger = logging.getLogger(__name__)
 
 
 @flow(name="crawl-one-source")
-async def crawl_one_source(source_name: str) -> list[dict]:
+async def crawl_one_source(source_name: str) -> int:
     """
-    Phase 1 flow: crawl one source -> detect change -> extract -> log the
-    resulting Launch objects as JSON.
+    Crawl one source -> store the raw payload -> detect change -> extract ->
+    persist. Returns the number of launches saved.
 
     Deliberately thin — every decision (what changed, how to parse, how to
-    extract) lives in watch/ and extract/ so those stages stay testable
+    extract) lives in watch/, extract/ and db/ so those stages stay testable
     without Prefect running at all.
 
-    TODO(phase2): dedup.resolver plugs in here, between extract and storing.
-    TODO(phase3): db.repository.save(...) plugs in after dedup.
-    TODO(phase3): notify.router plugs in after a launch is saved as new.
+    TODO(phase2): dedup.resolver plugs in between extract and persist, so a
+      launch seen on several sources merges instead of inserting duplicates.
+    TODO(phase3): notify.router plugs in after a launch is persisted as new.
     """
     source = load_source_config(source_name)
     pages = await fetch_source_pages(source)
@@ -38,15 +38,13 @@ async def crawl_one_source(source_name: str) -> list[dict]:
 
     if not candidates:
         logger.info("No new/changed content for source=%s", source_name)
-        return []
+        return 0
 
     launches = extract_candidates(candidates)
+    saved = persist_launches(launches)
 
-    results = [json.loads(launch.model_dump_json()) for launch in launches]
-    for result in results:
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-
-    return results
+    logger.info("source=%s saved=%d", source_name, saved)
+    return saved
 
 
 if __name__ == "__main__":
