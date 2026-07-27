@@ -1,0 +1,175 @@
+{
+  "page": 1,
+  "pageSize": 3,
+  "total": 222,
+  "results": [
+    {
+      "id": 128871,
+      "slug": "128871-studio-for-sale-in-southmed-by-talaat-moustafa-group-tmg-holding",
+      "imageUrl": "https://s3.eu-central-1.amazonaws.com/prod.images.cooingestate.com/admin/inventory/brochure_images/Talaat%20Moustafa%20Group%20TMG%20Holding/southmed/Screenshot%202026-06-14%20123348/Screenshot%202026-06-14%20123348.png",
+      "title": "Studio, Southmed",
+      "subtitle": "Studio for sale in Southmed - with in Al Dabaa by Talaat Moustafa Group (TMG) Holding.",
+      "propertyType": "Studio",
+      "compound": {
+        "id": 1198,
+        "name": "Southmed",
+        "slug": "1198-southmed",
+        "nawyOrganizationId": null
+      },
+      "area": {
+        "id": 34,
+        "name": "Al Dabaa",
+        "parentAreaId": 3,
+        "parentAreaName": "North Coast-Sahel"
+      },
+      "developer": {
+        "id": 69,
+        "name": "Talaat Moustafa Group (TMG) Holding",
+        "slug": "talaat-moustafa-group-(tmg)-holding",
+        "logoPath": "https://s3.eu-central-1.amazonaws.com/prod.images.cooingestate.com/admin/developer/logo_image/69/Frame_427321290.jpg"
+      },
+      "finishing": "finished",
+      "readyBy": "2030-07-06T00:00:00.000Z",
+      "unitArea": 34,
+      "numberOfBedrooms": 0,
+      "numberOfBathrooms": 1,
+      "hasOffer": false,
+      "hasMortgage": false,
+      "nawySelection": false,
+      "ramadanPromo": false,
+      "saleType": "developer_sale",
+      "badges": [],
+      "paymentPlan": {
+        "frequency": "monthly",
+        "downPaymentPercentage": 1.5,
+        "installmentPercentage": 97,
+        "numberOfInstallmentYears": 15,
+        "isCash": false,
+        "isBackLoaded": false,
+        "installmentType": "Equal",
+        "minPrice": 6000000,
+        "minInstallment": 32333,
+        "minDownPayment": 90000,
+        "currency": "EGP"
+      },
+      "tags": [
+        {
+          "name": "Launch",
+          "backgroundColor": "#E0C294"
+        }
+      ]
+    },
+    {
+      "id": 59834,
+      "slug": "59834-chalet-for-sale-in-southmed-with-3-bedrooms-in-al-dabaa-by-talaat-moustafa-group-tmg-holding",
+      "imageUrl": "https://s3.eu-central-1.amazonaws.com/prod.images.cooingestate.com/admin/inventory/unlockedProperties/59834/bebd4ff1-2acb-41c9-8eea-f5517c0b917f/sm5.png",
+      "title": "Chalet, Southmed",
+      "subtitle": "Chalet for sale in Southmed - with 3 bedrooms in Al Dabaa by Talaat Moustafa Group (TMG) Holding.",
+      "propertyType": "Chalet",
+      "compound": {
+        "id": 1198,
+        "name": "Southmed",
+        "slug": "1198-southmed",
+        "nawyOrganizationId": 1
+      },
+      "area": {
+        "id": 34,
+        "name": "Al Dabaa",
+        "parentAreaId": 3,
+        "parentAreaName": "North Coast-Sahel"
+      },
+      "developer": {
+        "id": 69,
+        "name": "Talaat Moustafa Group (TMG) Holding",
+        "slug": "talaat-moustafa-group-(tmg)-holding",
+        "logoPath": "https://s3.eu-central-1.amazonaws.com/prod.images.cooingestate.com/admin/developer/logo_image/69/Frame_427321290.jpg"
+      },
+      "finishing": "finished",
+      "readyBy": "2028-12-30T00:00:00.000Z",
+      "unitArea": 178,
+      "numberOfBedrooms": 3,
+      "numberOfBathrooms": 2,
+      "hasOffer": false,
+      "hasMortgage": false,
+      "nawySelection": false,
+      "ramadanPromo": false,
+      "saleType": "resale",
+      "badges": [],
+      "paymentPlan": {
+        "frequency": "monthly",
+        "downPaymentPercentage": 35.890939,
+        "installmentPercentage": 64,
+        "numberOfInstallmentYears": 6,
+        "isCash": false,
+        "isBackLoaded": false,
+        "installmentType": "Equal",
+        "minPrice": 47365715,
+        "minInstallment": 421746,
+        "minDownPayment": 17000000,
+        "currency": "EGP"
+      },
+      "tags": [
+        {
+          "name": "Resale",
+          "backgroundColor": "#7dcbc1"
+        }
+      ]
+    },
+    {
+      "id": 59900,
+      "slug": "59900-chalet-for-sale-in-southmed-with-2-bedrooms-in-al-dabaa-by-talaat-moustafa-group-(tmg)-holding",
+      "imageUrl": "https://s3.eu-central-1.amazonaws.com/prod.images.cooingestate.com/admin/inventory/unlockedProperties/59900/7a4d5e25-ef72-4eed-90f0-ab9d5f69f57c/sm2.png",
+      "title": "Chalet, Southmed",
+      "subtitle": "Chalet for sale in Southmed - with 2 bedrooms in Al Dabaa by Talaat Moustafa Group (TMG) Holding.",
+      "propertyType": "Chalet",
+      "compound": {
+        "id": 1198,
+        "name": "Southmed",
+        "slug": "1198-southmed",
+        "nawyOrganizationId": 1
+      },
+      "area": {
+        "id": 34,
+        "name": "Al Dabaa",
+        "parentAreaId": 3,
+        "parentAreaName": "North Coast-Sahel"
+      },
+      "developer": {
+        "id": 69,
+        "name": "Talaat Moustafa Group (TMG) Holding",
+        "slug": "talaat-moustafa-group-(tmg)-holding",
+        "logoPath": "https://s3.eu-central-1.amazonaws.com/prod.images.cooingestate.com/admin/developer/logo_image/69/Frame_427321290.jpg"
+      },
+      "finishing": "finished",
+      "readyBy": "2028-07-30T00:00:00.000Z",
+      "unitArea": 122,
+      "numberOfBedrooms": 2,
+      "numberOfBathrooms": 2,
+      "hasOffer": false,
+      "hasMortgage": false,
+      "nawySelection": false,
+      "ramadanPromo": false,
+      "saleType": "resale",
+      "badges": [],
+      "paymentPlan": {
+        "frequency": "monthly",
+        "downPaymentPercentage": 21.83908,
+        "installmentPercentage": 78,
+        "numberOfInstallmentYears": 10.6,
+        "isCash": false,
+        "isBackLoaded": false,
+        "installmentType": "Equal",
+        "minPrice": 15225000,
+        "minInstallment": 93701,
+        "minDownPayment": 3325000,
+        "currency": "EGP"
+      },
+      "tags": [
+        {
+          "name": "Resale",
+          "backgroundColor": "#7dcbc1"
+        }
+      ]
+    }
+  ]
+}

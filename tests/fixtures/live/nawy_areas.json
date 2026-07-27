@@ -1,0 +1,57 @@
+{
+  "page": 1,
+  "pageSize": 5,
+  "total": 47,
+  "results": [
+    {
+      "id": 2,
+      "name": "New Cairo",
+      "slug": "new-cairo",
+      "slugEn": "new-cairo",
+      "slugAr": "القاهرة-الجديدة",
+      "imageUrl": "https://prod-images.nawy.com/processed/area/image/2/high.webp",
+      "compoundsCount": 383,
+      "propertiesCount": 3733
+    },
+    {
+      "id": 1,
+      "name": "6th of October City",
+      "slug": "6th-of-october-city",
+      "slugEn": "6th-of-october-city",
+      "slugAr": "مدينة-السادس-من-أكتوبر",
+      "imageUrl": "https://prod-images.nawy.com/processed/area/image/1/high.webp",
+      "compoundsCount": 171,
+      "propertiesCount": 1225
+    },
+    {
+      "id": 9,
+      "name": "New Capital City",
+      "slug": "new-capital-city",
+      "slugEn": "new-capital-city",
+      "slugAr": "العاصمة-الإدارية-الجديدة",
+      "imageUrl": "https://prod-images.nawy.com/processed/area/image/9/high.webp",
+      "compoundsCount": 262,
+      "propertiesCount": 2024
+    },
+    {
+      "id": 10,
+      "name": "Mostakbal City",
+      "slug": "mostakbal-city",
+      "slugEn": "mostakbal-city",
+      "slugAr": "مدينة-المستقبل",
+      "imageUrl": "https://prod-images.nawy.com/processed/area/image/10/high.webp",
+      "compoundsCount": 60,
+      "propertiesCount": 1312
+    },
+    {
+      "id": 4,
+      "name": "Ain Sokhna",
+      "slug": "ain-sokhna",
+      "slugEn": "ain-sokhna",
+      "slugAr": "العين-السخنة",
+      "imageUrl": "https://prod-images.nawy.com/processed/area/image/4/high.webp",
+      "compoundsCount": 87,
+      "propertiesCount": 687
+    }
+  ]
+}

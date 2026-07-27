@@ -1,7 +1,18 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Index, String, Text
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -53,6 +64,11 @@ class LaunchRow(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
 
+    # Links this launch to its canonical project (Phase 2 backfill fills it in).
+    # Nullable so the existing flat pipeline keeps working before any project
+    # rows exist — a launch is still valid without a resolved project.
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id"))
+
     developer: Mapped[str | None] = mapped_column(String(255))
     project_name: Mapped[str] = mapped_column(String(255), nullable=False)
     launch_type: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -77,3 +93,147 @@ class LaunchRow(Base):
     )
 
     __table_args__ = (Index("ix_launches_project_developer", "project_name", "developer"),)
+
+
+# ---------------------------------------------------------------------------
+# Relational model (the mentor's ask: Developers Profile, Projects, Units,
+# Current Launches, Availability — connected by foreign keys).
+#
+# Every entity carries (source, source_id): `source` is which site the row came
+# from ("nawy", "property_finder", ...) and `source_id` is that site's own id
+# for the record. The primary key is our OWN surrogate `id`, so two sources with
+# overlapping id spaces never collide, and re-syncing a source upserts on the
+# UNIQUE(source, source_id) constraint instead of inserting duplicates.
+# ---------------------------------------------------------------------------
+
+
+class Developer(Base):
+    """Developers Profile — one real-estate developer/company."""
+
+    __tablename__ = "developers"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str | None] = mapped_column(String(255))
+    logo_url: Mapped[str | None] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
+    projects_count: Mapped[int | None] = mapped_column(Integer)
+
+    # Full source payload, kept verbatim so we can re-derive fields later.
+    raw: Mapped[dict | None] = mapped_column(JSONB)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (UniqueConstraint("source", "source_id", name="uq_developers_source"),)
+
+
+class Area(Base):
+    """A zone / area (e.g. New Cairo, North Coast)."""
+
+    __tablename__ = "areas"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str | None] = mapped_column(String(255))
+    city: Mapped[str | None] = mapped_column(String(255))
+
+    raw: Mapped[dict | None] = mapped_column(JSONB)
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (UniqueConstraint("source", "source_id", name="uq_areas_source"),)
+
+
+class Project(Base):
+    """Projects (compounds) — the hub table. Belongs to one developer and one
+    area; owns many units, launches and availability snapshots."""
+
+    __tablename__ = "projects"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str | None] = mapped_column(String(255))
+
+    # Nullable FKs: a source may list a project before we've ingested its
+    # developer/area, and we'd rather store the project than drop it.
+    developer_id: Mapped[int | None] = mapped_column(ForeignKey("developers.id"))
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("areas.id"))
+
+    min_price: Mapped[float | None] = mapped_column(Float)
+    currency: Mapped[str | None] = mapped_column(String(8))
+    property_types: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    # True when this project is currently a "launch" (recently on market).
+    is_launch: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    delivery_date: Mapped[str | None] = mapped_column(String(64))
+    image_url: Mapped[str | None] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
+
+    raw: Mapped[dict | None] = mapped_column(JSONB)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("source", "source_id", name="uq_projects_source"),
+        Index("ix_projects_developer_id", "developer_id"),
+        Index("ix_projects_area_id", "area_id"),
+        Index("ix_projects_is_launch", "is_launch"),
+    )
+
+
+class Unit(Base):
+    """Units — an individual unit/property type within a project."""
+
+    __tablename__ = "units"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id"))
+
+    property_type: Mapped[str | None] = mapped_column(String(64))
+    unit_area_sqm: Mapped[float | None] = mapped_column(Float)
+    bedrooms: Mapped[int | None] = mapped_column(Integer)
+    bathrooms: Mapped[int | None] = mapped_column(Integer)
+    price: Mapped[float | None] = mapped_column(Float)
+    currency: Mapped[str | None] = mapped_column(String(8))
+    ready_by: Mapped[str | None] = mapped_column(String(32))
+    finishing: Mapped[str | None] = mapped_column(String(64))
+
+    raw: Mapped[dict | None] = mapped_column(JSONB)
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("source", "source_id", name="uq_units_source"),
+        Index("ix_units_project_id", "project_id"),
+    )
+
+
+class Availability(Base):
+    """Availability on overall projects — a time-stamped inventory rollup per
+    project, so R&D can track how availability/pricing moves over time."""
+
+    __tablename__ = "availability"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False)
+
+    snapshot_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    total_units: Mapped[int | None] = mapped_column(Integer)
+    available_units: Mapped[int | None] = mapped_column(Integer)
+    min_price: Mapped[float | None] = mapped_column(Float)
+    max_price: Mapped[float | None] = mapped_column(Float)
+    price_per_sqm_min: Mapped[float | None] = mapped_column(Float)
+    price_per_sqm_max: Mapped[float | None] = mapped_column(Float)
+    unit_types: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    delivery_range: Mapped[str | None] = mapped_column(String(64))
+
+    __table_args__ = (Index("ix_availability_project_snapshot", "project_id", "snapshot_at"),)

@@ -1,0 +1,178 @@
+{
+  "page": 1,
+  "pageSize": 3,
+  "total": 1830,
+  "results": [
+    {
+      "id": 1198,
+      "hasOffer": false,
+      "coordinates": [
+        28.407106,
+        31.086447
+      ],
+      "imageUrl": "https://prod-images.nawy.com/processed/inventory/compounds/1198/gallery/WhatsApp%20Image%202026-06-06%20at%203.21.42%20PM/high.webp",
+      "name": "Southmed",
+      "slug": "1198-southmed",
+      "areaId": 34,
+      "areaName": "Al Dabaa",
+      "parentAreaId": 3,
+      "parentAreaName": "North Coast-Sahel",
+      "developerId": 69,
+      "developerLogoUrl": "https://prod-images.nawy.com/processed/developer/logo_image/69/high.webp",
+      "developerName": "Talaat Moustafa Group (TMG) Holding",
+      "subtitle": "Discover Talaat Moustafa Group (TMG) Holding's Properties in Al Dabaa – With Financing Up to 15 Years",
+      "badges": [],
+      "propertyTypes": [
+        {
+          "name": "Chalet",
+          "namePlural": "Chalets",
+          "isFiltered": false
+        },
+        {
+          "name": "Apartment",
+          "namePlural": "Apartments",
+          "isFiltered": false
+        },
+        {
+          "name": "Twinhouse",
+          "namePlural": "Twinhouses",
+          "isFiltered": false
+        },
+        {
+          "name": "Penthouse",
+          "namePlural": "Penthouses",
+          "isFiltered": false
+        },
+        {
+          "name": "Villa",
+          "namePlural": "Villas",
+          "isFiltered": false
+        },
+        {
+          "name": "Studio",
+          "namePlural": "Studios",
+          "isFiltered": false
+        },
+        {
+          "name": "Duplex",
+          "namePlural": "Duplexes",
+          "isFiltered": false
+        }
+      ],
+      "developerPlan": {
+        "readyBy": null,
+        "downPaymentPercentage": 1.5,
+        "installmentPercentage": 0.538889,
+        "numberOfInstallmentYears": 15,
+        "isBackLoaded": false,
+        "installmentType": "DEFAULT",
+        "minPrice": 6000000,
+        "currency": "EGP"
+      },
+      "resalePlan": {
+        "readyBy": 20291230,
+        "downPaymentPercentage": 28.767123,
+        "installmentPercentage": null,
+        "numberOfInstallmentYears": 8,
+        "isBackLoaded": false,
+        "installmentType": "DEFAULT",
+        "minPrice": 7300000,
+        "currency": "EGP"
+      },
+      "nawyOrganizationId": null
+    },
+    {
+      "id": 2494,
+      "hasOffer": false,
+      "coordinates": [
+        28.169785,
+        31.081681
+      ],
+      "imageUrl": "https://prod-images.nawy.com/processed/inventory/compounds/2494/cover-images/ChatGPT%20Image%20Jul%206%202026%2012_06_31%20PM/high.webp",
+      "name": "Salt Marina",
+      "slug": "2494-salt-marina",
+      "areaId": 32,
+      "areaName": "Ras El Hekma",
+      "parentAreaId": 3,
+      "parentAreaName": "North Coast-Sahel",
+      "developerId": 33,
+      "developerLogoUrl": "https://prod-images.nawy.com/processed/developer/logo_image/33/high.webp",
+      "developerName": "Tatweer Misr",
+      "subtitle": "Discover Tatweer Misr's Properties in Ras El Hekma – With Financing Up to 10 Years",
+      "badges": [],
+      "propertyTypes": [
+        {
+          "name": "Studio",
+          "namePlural": "Studios",
+          "isFiltered": false
+        },
+        {
+          "name": "Chalet",
+          "namePlural": "Chalets",
+          "isFiltered": false
+        },
+        {
+          "name": "Townhouse",
+          "namePlural": "Townhouses",
+          "isFiltered": false
+        }
+      ],
+      "developerPlan": {
+        "readyBy": null,
+        "downPaymentPercentage": 5,
+        "installmentPercentage": 0.791667,
+        "numberOfInstallmentYears": 10,
+        "isBackLoaded": false,
+        "installmentType": "DEFAULT",
+        "minPrice": 7916000,
+        "currency": "EGP"
+      },
+      "nawyOrganizationId": null
+    },
+    {
+      "id": 2458,
+      "hasOffer": false,
+      "coordinates": null,
+      "imageUrl": "https://prod-images.nawy.com/processed/inventory/compounds/2458/cover-images/ChatGPT%20Image%20Jun%2028%202026%2007_39_44%20PM/high.webp",
+      "name": "Perla",
+      "slug": "2458-perla",
+      "areaId": 34,
+      "areaName": "Al Dabaa",
+      "parentAreaId": 3,
+      "parentAreaName": "North Coast-Sahel",
+      "developerId": 457,
+      "developerLogoUrl": "https://prod-images.nawy.com/processed/developer/logo_image/457/high.webp",
+      "developerName": "Nations Of Sky",
+      "subtitle": "Discover Nations Of Sky's Properties in Al Dabaa – With Financing Up to 6 Years",
+      "badges": [],
+      "propertyTypes": [
+        {
+          "name": "Villa",
+          "namePlural": "Villas",
+          "isFiltered": false
+        },
+        {
+          "name": "Chalet",
+          "namePlural": "Chalets",
+          "isFiltered": false
+        },
+        {
+          "name": "Penthouse",
+          "namePlural": "Penthouses",
+          "isFiltered": false
+        }
+      ],
+      "developerPlan": {
+        "readyBy": null,
+        "downPaymentPercentage": 5,
+        "installmentPercentage": 1.25,
+        "numberOfInstallmentYears": 6,
+        "isBackLoaded": false,
+        "installmentType": "DEFAULT",
+        "minPrice": 12200000,
+        "currency": "EGP"
+      },
+      "nawyOrganizationId": null
+    }
+  ]
+}

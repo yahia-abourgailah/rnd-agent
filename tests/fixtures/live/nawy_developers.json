@@ -1,0 +1,61 @@
+{
+  "page": 1,
+  "pageSize": 5,
+  "results": [
+    {
+      "id": 8,
+      "name": "SODIC",
+      "slug": "8-sodic",
+      "slugEn": "8-sodic",
+      "slugAr": "8-سوديك",
+      "image": "https://prod-images.nawy.com/processed/developer/logo_image/8/high.webp",
+      "minPrice": 4200000,
+      "compoundsCount": 57,
+      "propertiesCount": 668
+    },
+    {
+      "id": 15,
+      "name": "Hyde Park",
+      "slug": "15-hyde-park",
+      "slugEn": "15-hyde-park",
+      "slugAr": "15-هايد-بارك",
+      "image": "https://prod-images.nawy.com/processed/developer/logo_image/15/high.webp",
+      "minPrice": 4303200,
+      "compoundsCount": 27,
+      "propertiesCount": 550
+    },
+    {
+      "id": 6,
+      "name": "Mountain View",
+      "slug": "6-mountain-view",
+      "slugEn": "6-mountain-view",
+      "slugAr": "6-ماونتن-فيو",
+      "image": "https://prod-images.nawy.com/processed/developer/logo_image/6/high.webp",
+      "minPrice": 3930000,
+      "compoundsCount": 55,
+      "propertiesCount": 1383
+    },
+    {
+      "id": 85,
+      "name": "Ora Developers",
+      "slug": "85-ora-developers",
+      "slugEn": "85-ora-developers",
+      "slugAr": "85-اورا-للتطوير-العقاري",
+      "image": "https://prod-images.nawy.com/processed/developer/logo_image/85/high.webp",
+      "minPrice": 4135000,
+      "compoundsCount": 28,
+      "propertiesCount": 567
+    },
+    {
+      "id": 439,
+      "name": "Modon ",
+      "slug": "439-modon",
+      "slugEn": "439-modon",
+      "slugAr": "439-مدن",
+      "image": "https://prod-images.nawy.com/processed/developer/logo_image/439/high.webp",
+      "minPrice": 15000000,
+      "compoundsCount": 8,
+      "propertiesCount": 22
+    }
+  ]
+}

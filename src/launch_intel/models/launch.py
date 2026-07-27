@@ -52,6 +52,11 @@ class Launch(BaseModel):
     # whatever code constructs both objects together.
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
 
+    # Set by the Phase 2 backfill once this launch is matched to a canonical
+    # project row. None before then — the flat pipeline produces launches
+    # without needing a project to exist yet.
+    project_id: int | None = None
+
     developer: str | None = None
     project_name: str
     launch_type: LaunchType
