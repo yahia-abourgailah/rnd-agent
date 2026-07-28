@@ -7,6 +7,7 @@ class Availability(BaseModel):
     """Availability on overall projects — a point-in-time inventory rollup for
     one project, computed by aggregating its units."""
 
+    source: str  # which source the underlying units came from
     project_source_id: str  # the source's id for the project this rolls up
     snapshot_at: datetime
     total_units: int | None = None

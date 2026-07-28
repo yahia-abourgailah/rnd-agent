@@ -67,7 +67,7 @@ class LaunchRow(Base):
     # Links this launch to its canonical project (Phase 2 backfill fills it in).
     # Nullable so the existing flat pipeline keeps working before any project
     # rows exist — a launch is still valid without a resolved project.
-    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id"))
+    project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"))
 
     developer: Mapped[str | None] = mapped_column(String(255))
     project_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -99,12 +99,38 @@ class LaunchRow(Base):
 # Relational model (the mentor's ask: Developers Profile, Projects, Units,
 # Current Launches, Availability — connected by foreign keys).
 #
-# Every entity carries (source, source_id): `source` is which site the row came
-# from ("nawy", "property_finder", ...) and `source_id` is that site's own id
-# for the record. The primary key is our OWN surrogate `id`, so two sources with
-# overlapping id spaces never collide, and re-syncing a source upserts on the
-# UNIQUE(source, source_id) constraint instead of inserting duplicates.
+# IDENTITY: the primary key `id` is a UUID WE generate — it is our own,
+# independent of any source. Foreign keys reference these UUIDs.
+#
+# `external_ref` holds the ORIGIN's identifier in "source:source_id" form
+# (e.g. "nawy:1198"). It is a reference only — never the identity — and exists
+# so a re-sync can recognise a record it has already stored and UPDATE it
+# instead of inserting a duplicate. Uniqueness is enforced on `external_ref`.
+#
+# PROVENANCE: which origin a row came from is normalised into the `sources`
+# registry (nawy = 1, property_finder = 2, ...). Every entity references it via
+# `source_id` FK rather than repeating the source name as a string.
 # ---------------------------------------------------------------------------
+
+
+class Source(Base):
+    """Registry of data sources — one row per origin site, with a small,
+    human-friendly id assigned by us (nawy = 1, property_finder = 2, ...).
+    `is_active` marks which sources are actually being ingested today."""
+
+    __tablename__ = "sources"
+
+    # Deliberately not autoincrement: the registry is small and hand-curated,
+    # so ids are assigned explicitly and stay stable/readable.
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)  # machine slug, e.g. "nawy"
+    display_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    base_url: Mapped[str | None] = mapped_column(Text)
+    source_type: Mapped[str | None] = mapped_column(String(32))
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (UniqueConstraint("name", name="uq_sources_name"),)
 
 
 class Developer(Base):
@@ -112,9 +138,9 @@ class Developer(Base):
 
     __tablename__ = "developers"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    source: Mapped[str] = mapped_column(String(50), nullable=False)
-    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"), nullable=False)
+    external_ref: Mapped[str] = mapped_column(String(128), nullable=False)
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str | None] = mapped_column(String(255))
@@ -127,7 +153,15 @@ class Developer(Base):
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (UniqueConstraint("source", "source_id", name="uq_developers_source"),)
+    # Dedup: when this row is a duplicate of another (e.g. "Sodic" from Property
+    # Finder ≡ "SODIC" from Nawy), points at the canonical developer. NULL means
+    # this row IS canonical / standalone. Set by dedup/resolver.py.
+    canonical_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("developers.id"))
+
+    __table_args__ = (
+        UniqueConstraint("external_ref", name="uq_developers_ref"),
+        Index("ix_developers_canonical_id", "canonical_id"),
+    )
 
 
 class Area(Base):
@@ -135,9 +169,9 @@ class Area(Base):
 
     __tablename__ = "areas"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    source: Mapped[str] = mapped_column(String(50), nullable=False)
-    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"), nullable=False)
+    external_ref: Mapped[str] = mapped_column(String(128), nullable=False)
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str | None] = mapped_column(String(255))
@@ -146,7 +180,7 @@ class Area(Base):
     raw: Mapped[dict | None] = mapped_column(JSONB)
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (UniqueConstraint("source", "source_id", name="uq_areas_source"),)
+    __table_args__ = (UniqueConstraint("external_ref", name="uq_areas_ref"),)
 
 
 class Project(Base):
@@ -155,17 +189,17 @@ class Project(Base):
 
     __tablename__ = "projects"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    source: Mapped[str] = mapped_column(String(50), nullable=False)
-    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"), nullable=False)
+    external_ref: Mapped[str] = mapped_column(String(128), nullable=False)
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str | None] = mapped_column(String(255))
 
     # Nullable FKs: a source may list a project before we've ingested its
     # developer/area, and we'd rather store the project than drop it.
-    developer_id: Mapped[int | None] = mapped_column(ForeignKey("developers.id"))
-    area_id: Mapped[int | None] = mapped_column(ForeignKey("areas.id"))
+    developer_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("developers.id"))
+    area_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("areas.id"))
 
     min_price: Mapped[float | None] = mapped_column(Float)
     currency: Mapped[str | None] = mapped_column(String(8))
@@ -180,11 +214,17 @@ class Project(Base):
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
+    # Dedup: points at the canonical project when this row is the same real
+    # project reported by another source. NULL = canonical / standalone.
+    canonical_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"))
+
     __table_args__ = (
-        UniqueConstraint("source", "source_id", name="uq_projects_source"),
+        UniqueConstraint("external_ref", name="uq_projects_ref"),
         Index("ix_projects_developer_id", "developer_id"),
         Index("ix_projects_area_id", "area_id"),
         Index("ix_projects_is_launch", "is_launch"),
+        Index("ix_projects_source_id", "source_id"),
+        Index("ix_projects_canonical_id", "canonical_id"),
     )
 
 
@@ -193,11 +233,11 @@ class Unit(Base):
 
     __tablename__ = "units"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    source: Mapped[str] = mapped_column(String(50), nullable=False)
-    source_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"), nullable=False)
+    external_ref: Mapped[str] = mapped_column(String(128), nullable=False)
 
-    project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id"))
+    project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"))
 
     property_type: Mapped[str | None] = mapped_column(String(64))
     unit_area_sqm: Mapped[float | None] = mapped_column(Float)
@@ -212,8 +252,9 @@ class Unit(Base):
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("source", "source_id", name="uq_units_source"),
+        UniqueConstraint("external_ref", name="uq_units_ref"),
         Index("ix_units_project_id", "project_id"),
+        Index("ix_units_source_id", "source_id"),
     )
 
 
@@ -223,8 +264,9 @@ class Availability(Base):
 
     __tablename__ = "availability"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id"), nullable=False)
+    source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"), nullable=False)
 
     snapshot_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     total_units: Mapped[int | None] = mapped_column(Integer)

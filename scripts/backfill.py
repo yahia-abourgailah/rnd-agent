@@ -22,6 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from launch_intel.backfill import nawy_client as nc  # noqa: E402
+from launch_intel.backfill import property_finder_client as pf  # noqa: E402
 from launch_intel.db import repository as repo  # noqa: E402
 from launch_intel.watch.fetcher import Fetcher  # noqa: E402
 
@@ -29,7 +30,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger("backfill")
 
 
-async def run(units_scope: str, limit: int | None) -> None:
+async def run_nawy(units_scope: str, limit: int | None) -> None:
     fetcher = Fetcher(rate_limit_seconds=3)
 
     # 0. Which compounds are currently "launches" — so projects get is_launch
@@ -92,22 +93,56 @@ async def run(units_scope: str, limit: int | None) -> None:
     logger.info("DONE. table row counts: %s", counts)
 
 
+async def run_property_finder(limit: int | None) -> None:
+    """Backfill Property Finder (source_id=2). Developers and areas are derived
+    from the projects (no standalone feeds); the listing carries no per-unit
+    rows, so units/availability stay Nawy-only for now."""
+    fetcher = Fetcher(rate_limit_seconds=2)
+
+    raws = await pf.fetch_projects(fetcher, limit=limit)
+    logger.info("fetched %d Property Finder projects", len(raws))
+
+    developers = pf.developers_from_projects(raws)
+    areas = pf.areas_from_projects(raws)
+    projects = [p for p in (pf.map_project(r) for r in raws) if p]
+
+    dev_map = repo.upsert_developers(developers)
+    area_map = repo.upsert_areas(areas)
+    project_map = repo.upsert_projects(projects, dev_map, area_map)
+    logger.info(
+        "upserted developers=%d areas=%d projects=%d",
+        len(dev_map), len(area_map), len(project_map),
+    )
+
+    counts = repo.entity_counts()
+    logger.info("DONE. table row counts: %s", counts)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--source",
+        choices=["nawy", "property_finder"],
+        default="nawy",
+        help="Which source to backfill.",
+    )
     parser.add_argument(
         "--units",
         choices=["launches", "all"],
         default="launches",
-        help="Fetch per-unit rows for launches only (default) or every project.",
+        help="[nawy] Fetch per-unit rows for launches only (default) or every project.",
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=None,
-        help="Cap the number of compounds loaded (smoke test).",
+        help="Cap the number of projects loaded (smoke test).",
     )
     args = parser.parse_args()
-    asyncio.run(run(args.units, args.limit))
+    if args.source == "nawy":
+        asyncio.run(run_nawy(args.units, args.limit))
+    else:
+        asyncio.run(run_property_finder(args.limit))
 
 
 if __name__ == "__main__":

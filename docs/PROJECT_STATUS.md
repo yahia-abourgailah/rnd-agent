@@ -1,9 +1,11 @@
 # Competitive Launch Intelligence — Project Status & Handoff
 
 **Repo:** https://github.com/yahia-abourgailah/rnd-agent (branch `main`)
-**Purpose:** Automated pipeline for The Address Investments that monitors
-competitor real-estate launches across Egyptian sources, extracts structured
-data with an LLM, stores it, and (later) deduplicates and alerts the R&D team.
+**Purpose:** Automated pipeline for The Address Investments that (a) monitors
+competitor real-estate launches across Egyptian sources and (b) maintains a
+**connected catalogue** of the whole market — developers, projects, units,
+areas, availability — for the R&D team's CRM. Later: dedup across sources,
+alerts, and a chatbot over the data.
 
 > This file is the single source of truth for "where are we." Read it top to
 > bottom to continue the project in a fresh session.
@@ -27,6 +29,14 @@ rules hold throughout:
   all real logic lives in the stage modules, so everything is testable without
   Prefect running.
 
+**Two data models now coexist:**
+1. The original flat `launches` table — produced by the Watch→Extract pipeline
+   above (new-launch detection).
+2. A **relational model** — `sources`, `developers`, `areas`, `projects`,
+   `units`, `availability` — populated by a **backfill** from Nawy's structured
+   API. This is the mentor's "past + connected" ask (§5), now **BUILT and
+   loaded**. The flat `launches` table links into it via a nullable `project_id`.
+
 ---
 
 ## 2. What is DONE and verified working
@@ -39,12 +49,29 @@ rules hold throughout:
 | **Watch** — Nawy adapter | ✅ | reads Nawy's embedded `__NEXT_DATA__` JSON + enriches via its listing API |
 | **Extract** | ✅ | ScrapeGraphAI + company `gemma-4`; Arabic/English; many launches per page |
 | **Store** | ✅ | Postgres: `launches`, `raw_content`, `fetch_log` (Alembic-managed) |
+| **Relational model** | ✅ | `sources`, `developers`, `areas`, `projects`, `units`, `availability` — connected by FKs (Alembic-managed). See §5. |
+| **Backfill** | ✅ | `scripts/backfill.py` loads Nawy's full catalogue into the relational tables. `src/launch_intel/backfill/` |
 | Infra | ✅ | Docker (Postgres+pgvector, Redis), 3 environments (dev/staging/prod), GitHub |
 | Tests | ✅ | 53 passing, fully offline (saved fixtures + mocked LLM) |
 
-**End-to-end proof:** `python scripts/run_source.py --source nawy` fetches
-Nawy's new-launches page, extracts ~24 launches with `gemma-4`, and writes them
-to Postgres — queryable by price/zone/developer. Verified live.
+**End-to-end proof (launch detection):** `python scripts/run_source.py --source
+nawy` fetches Nawy's new-launches page, extracts ~24 launches with `gemma-4`, and
+writes them to the flat `launches` table — queryable by price/zone/developer.
+
+**End-to-end proof (relational backfill):** `python scripts/backfill.py` loaded
+**394 developers, 47 areas, 1,830 projects, 299 launch units** and their
+availability snapshots into the connected tables. Verified live: **1,830/1,830
+projects link to a developer AND an area**, zero orphaned FKs, re-running syncs
+in place (no duplicates).
+
+### Identity design (settled with mentor)
+- Every relational row's **primary key `id` is a UUID we generate** — our own,
+  independent of any source. Foreign keys reference these UUIDs.
+- The origin's own id is kept only as **`external_ref`** (`"nawy:1198"`), the key
+  a re-sync matches on to UPDATE-not-duplicate. Uniqueness is on `external_ref`.
+- **Provenance is normalised** into the `sources` registry (`nawy`=1,
+  `property_finder`=2, `sodic`=3, `palm_hills`=4); every entity carries a
+  `source_id` FK. `is_active` marks which sources are live (only Nawy today).
 
 ### The one real source: Nawy
 Nawy is a Next.js app. Its data lives in a `__NEXT_DATA__` `<script>` tag and a
@@ -60,19 +87,21 @@ notice** — the adapter fails safe (returns nothing) if the shape changes.
 
 | Stage / piece | Owner | What it is |
 |---|---|---|
-| **Dedup** | teammate | Recognise the same launch reported by multiple sources as one event. Currently re-running inserts duplicate rows — expected. |
+| **Dedup** | teammate | Recognise the same project reported by *multiple sources* as one entity. Not needed yet (only Nawy is live); the relational tables already prevent same-source duplicates via upsert on `external_ref`. Cross-source dedup will match on `developer_id`/`external_ref`, not fuzzy text. |
 | **Notify** | teammate | Slack alerts (Block Kit) to the R&D team with source links. |
-| **API** (`api/`) | either | FastAPI read endpoints. Stubbed, empty. Needed for the CRM (see §6). |
+| **API** (`api/`) | either | FastAPI read endpoints. Stubbed, empty. Needed for the CRM (see §6). Next up (Phase 3). |
 | **Dashboard** | either | Metabase — sketched (commented) in `docker-compose.yml`, not wired. |
-| More adapters | you | Only Nawy is real. `sodic.py`, `palm_hills.py`, `property_finder.py` raise `NotImplementedError`. |
-| Backfill / past data | you | The big new ask — see §5. |
+| More adapters | you | Only Nawy is real & active. `property_finder.py`, `sodic.py`, `palm_hills.py` raise `NotImplementedError` (but are registered in the `sources` table, ready to activate). |
 
 ---
 
 ## 4. Known issues (found by running against live data)
 
-1. **Duplicates on every run.** No uniqueness constraint; each run inserts new
-   rows. This is *expected* — dedup (teammate's stage) solves it.
+1. **Duplicates on every run — only in the flat `launches` table.** That table
+   has no uniqueness constraint, so the launch-detection pipeline re-inserts
+   rows; dedup (teammate's stage) solves it. The **relational tables do NOT have
+   this problem** — they upsert on `UNIQUE(external_ref)`, so re-running the
+   backfill syncs in place (verified: projects stayed 1,830, not doubled).
 2. **`confidence` is 1.0 on almost everything.** The model doesn't discriminate,
    so it isn't yet a usable filter signal. Revisit with messier sources, or
    redefine it to measure completeness (contract change).
@@ -90,51 +119,64 @@ notice** — the adapter fails safe (returns nothing) if the shape changes.
 
 ---
 
-## 5. THE NEW ASK: all past data + "connected to each other"
+## 5. THE MENTOR'S ASK: all past data + "connected" — ✅ BUILT
 
 Mentor's request: store **all** the developers' projects (not just new
-launches), and make the records **connected** (relational).
+launches), and make the records **connected** (relational). Done — the whole
+Nawy catalogue is loaded into linked tables.
 
-**The data exists** — Nawy exposes it, with the links already built in:
+**Nawy endpoints used** (undocumented, public — shapes captured as offline
+fixtures in `tests/fixtures/live/nawy_*.json`):
 
-| Endpoint | Count | What |
+| Endpoint | Count | Loads into |
 |---|---|---|
-| `listing-api.nawy.com/v1/search/compounds` | **1,828** | every project, past + present |
-| `listing-api.nawy.com/v1/developers` | all | the companies |
-| `listing-api.nawy.com/v1/areas` | 47 | the zones |
+| `/v1/developers` | 394 | `developers` (no `total` field — paginate to empty) |
+| `/v1/areas` | 47 | `areas` |
+| `/v1/search/compounds` | 1,830 | `projects` (carries `developerId`, `areaId`) |
+| `/v1/search/properties` | per-compound | `units` |
 
-Every compound record carries `developerId` and `areaId` — those are foreign
-keys waiting to be used.
-
-### Proposed relational model
+### The relational model as built
 ```
-developers ──< compounds >── areas
+sources ──┐  (every entity carries source_id → sources)
+          ├──< developers ──┐
+          ├──< areas ───────┤
+          └──< projects ────┴──(FKs)   projects is the hub
                   │
-                  └──< launches   (a launch = a compound newly on market, isLaunch=true)
-                         └──< units   (sizes, delivery, per unit)
+                  ├──< units          (price, beds, area, delivery, per unit)
+                  ├──< availability   (computed rollup per project, time-stamped)
+                  └──  is_launch flag + flat launches.project_id → projects.id
 ```
-- A **launch is a compound that recently came to market** — so `launches`
-  points at `compounds`, which points at `developers` and `areas`.
-- This makes dedup *easier* (match on real `developerId`, not fuzzy "SODIC" text).
+- **Identity:** `id` is a UUID we generate; the origin id lives only in
+  `external_ref` ("nawy:1198"); provenance is the `source_id` FK. (See §2.)
+- **Launches:** a project is flagged `is_launch=true` by cross-referencing
+  Nawy's new-launches feed (the proven `NawyAdapter` parser). 24 current.
+- **Availability is computed, not fetched:** Nawy has no availability endpoint,
+  so each snapshot is rolled up from a project's `units` (totals, price range,
+  price/m², delivery range) and stamped with `snapshot_at`.
 
-### Build order for this expansion
-1. New tables `developers`, `areas`, `compounds`, `launches` (`db/tables.py` + migration).
-2. Backfill adapters for the three endpoints above; reuse the existing `Fetcher`.
-3. One-time `scripts/backfill.py`: load developers → areas → compounds (in that
-   order, so foreign keys resolve), then flag launches.
-4. Ongoing: existing hourly crawl adds new launches; a weekly job re-syncs the
-   full compound list for price/status changes.
+### Load order (so FKs resolve)
+`developers → areas → projects → units → availability`. A **gap-fill** step
+creates minimal `developers`/`areas` rows for any id a compound references but
+the entity endpoints miss (e.g. leaf areas) — which is why all 1,830 projects
+linked cleanly.
 
-### Decisions to settle BEFORE building (with mentor + teammate)
-- **Scope of "past":** all 1,828 compounds, or only The Address's named
-  competitors? (Get the competitor list — crawling 1,828 when you track 30 is
-  wasted load.)
-- **Enrich everything?** Unit-level enrichment for 1,828 compounds is ~1,828 API
-  calls. Maybe only new launches get deep enrichment; old projects store
-  compound-level facts only.
-- **This is a shared-contract change.** The model shifts from a flat `launches`
-  table to linked entities. Teammate builds dedup against the current shape —
-  align first.
+### Decisions (settled)
+- **Scope of "past":** load **everything** — all 1,830 compounds (the whole
+  market). ✅
+- **Enrich units:** **launches deep, market wide** — per-unit rows for the 24
+  live launches; headline facts (developer, area, price, types) for all 1,830.
+  Run `scripts/backfill.py --units all` to deep-enrich every project (~1,800 API
+  calls, slow) when needed.
+- **Shared-contract change:** the flat `launches` model was kept intact
+  (additive `project_id` link), so the teammate's dedup work isn't broken — all
+  53 tests still pass.
+
+### Run it
+```bash
+python scripts/backfill.py                 # all developers/areas/projects, units for launches
+python scripts/backfill.py --units all     # + per-unit rows for every project (slow)
+python scripts/backfill.py --limit 50      # smoke test (first 50 compounds)
+```
 
 ---
 
@@ -182,15 +224,22 @@ playwright install chromium
 # 4. Sanity check (offline, no API/network)
 pytest -q                                # expect 53 passed
 
-# 5. Run the pipeline end-to-end (writes to Postgres)
+# 5a. Launch-detection pipeline → flat launches table
 del .crawl_state.json                    # force re-run (change detection is per-URL)
 python scripts\run_source.py --source nawy
+
+# 5b. Relational backfill → developers/areas/projects/units/availability
+python scripts\backfill.py               # ~2 min; re-runnable (upserts, no dupes)
 
 # 6. Inspect the data
 docker compose exec postgres psql -U launch_intel -d launch_intel
 #   \dt                     list tables
-#   SELECT project_name, developer, zone, price_from
-#     FROM launches ORDER BY price_from DESC NULLS LAST LIMIT 10;
+#   -- connected view through the relational model:
+#   SELECT p.name, d.name AS developer, a.name AS area, p.min_price
+#     FROM projects p
+#     JOIN developers d ON d.id = p.developer_id
+#     JOIN areas a      ON a.id = p.area_id
+#     ORDER BY p.min_price DESC NULLS LAST LIMIT 10;
 #   \q                      quit
 ```
 
@@ -208,32 +257,43 @@ docker compose exec postgres psql -U launch_intel -d launch_intel
 ## 8. Repo map
 
 ```
-config/            settings.py (env-layered), sources.<env>.yaml (source registry)
+config/            settings.py (env-layered), sources.<env>.yaml (crawl registry — separate from the DB sources table)
 src/launch_intel/
-  models/          the shared contract (Launch, SourceConfig, SourceEvidence, RawPage, Candidate)
+  models/          shared contract: Launch, SourceConfig, RawPage, Candidate + relational: Developer, Area, Project, Unit, Availability
   watch/           fetcher, change_detector, base adapter, adapters/ (nawy real; others stubs)
   extract/         extractor (ScrapeGraphAI), prompts, normalize
-  db/              engine, tables, repository, migrations/ (Alembic)
+  backfill/        nawy_client.py — fetch + map Nawy's entity endpoints → relational models (no LLM)
+  db/              engine, tables (flat + relational), repository (upserts), migrations/ (Alembic)
   pipeline/        flows.py (thin), tasks.py (the steps)
   dedup/ notify/ feedback/ metrics/ api/   ← stubs, TODO markers
-scripts/           run_source.py (works), backfill.py (stub), seed_sources.py (stub)
-tests/             mirrors src/; 53 tests; fixtures/live/ has real saved HTML/JSON
+scripts/           run_source.py (works), backfill.py (WORKS), seed_sources.py (stub)
+tests/             mirrors src/; 53 tests; fixtures/live/ has real saved HTML + nawy_*.json entity samples
 docs/              this file
 ```
+
+Migrations (Alembic, in order): `e2cf8c9`-era flat tables → `b7f1a2c3d4e5`
+(relational tables) → `c9d2e3f4a5b6` (UUID identity + external_ref) →
+`d0e1f2a3b4c5` (sources registry + source_id FKs).
 
 ---
 
 ## 9. Suggested next actions (pick by goal)
 
-- **Ship something visible to R&D:** wire Metabase onto the existing Postgres.
-- **The mentor's ask (past + connected):** do §5 — but write/approve the schema
-  with mentor + teammate first (it's a contract change).
-- **CRM:** build the FastAPI read endpoints (§6), hand the CRM team the URLs.
+- **Phase 3 — CRM API (recommended next):** build the FastAPI read endpoints
+  (§6) over the relational tables, hand the CRM/full-stack team the URLs.
+- **Ship something visible to R&D now:** wire Metabase onto Postgres — the
+  relational tables give instant rich dashboards (projects per developer/area,
+  price distributions) with no frontend work.
+- **Chatbot (new idea):** point a text-to-SQL bot at the relational schema so
+  R&D can ask free-form questions; the FKs make the joins possible.
+- **Coverage — a real 2nd source:** build the `property_finder` adapter
+  (`source_id=2` is already registered); its rows land in the same tables. This
+  is when cross-source **dedup** becomes needed.
 - **Correctness:** fix the price-flicker (Known Issue #3) and wire change
   detection to the DB (Known Issue #4).
-- **Coverage:** build the SODIC or Palm Hills adapter.
 
 ---
 
-_Last updated: 2026-07-26. Latest commit: `e2cf8c9` (Persist launches and raw
-payloads to Postgres). 53 tests passing._
+_Last updated: 2026-07-27. Phases 1–2 complete: relational model (UUID identity,
+`sources` registry) + full Nawy backfill (394 developers, 47 areas, 1,830
+projects). 53 tests passing. Migration head: `d0e1f2a3b4c5`._

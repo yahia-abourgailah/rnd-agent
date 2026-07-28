@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
@@ -12,6 +13,7 @@ from launch_intel.db.tables import (
     LaunchRow,
     Project as ProjectRow,
     RawContent,
+    Source as SourceRow,
     Unit as UnitRow,
 )
 from launch_intel.models import (
@@ -100,43 +102,66 @@ def save_launches(launches: list[Launch]) -> int:
 # --------------------------------------------------------------------------- #
 # Relational backfill (developers, areas, projects, units, availability).
 #
-# Each entity is upserted on its UNIQUE(source, source_id) so re-running the
-# backfill syncs in place instead of inserting duplicates. Upserts RETURN
-# (id, source_id) so the caller can resolve foreign keys for the next stage
-# (developer_id / area_id on projects, project_id on units & availability).
+# IDENTITY: every row's `id` is a UUID WE generate. `external_ref` ("nawy:1198")
+# is the ORIGIN's identifier, kept only so a re-sync can find a record it already
+# stored. Each entity upserts on UNIQUE(external_ref) — re-running syncs in place
+# instead of duplicating. Upserts RETURN (id, external_ref) so the caller can
+# resolve foreign keys (our UUIDs) for the next stage.
 # --------------------------------------------------------------------------- #
 _UPSERT_CHUNK = 500
 
 
-def _upsert_entities(rows: list[dict], table, update_cols: list[str]) -> dict[str, int]:
-    """Bulk upsert entity rows; return {source_id: surrogate id}."""
+def external_ref(source: str, source_id: str) -> str:
+    """The origin's identifier in "source:source_id" form (e.g. "nawy:1198")."""
+    return f"{source}:{source_id}"
+
+
+def source_id_map() -> dict[str, int]:
+    """{source name -> registry id}, e.g. {"nawy": 1}. Used to resolve each
+    entity's provenance to its sources.id foreign key."""
+    with session_scope() as session:
+        return dict(session.execute(select(SourceRow.name, SourceRow.id)).all())
+
+
+def _upsert_entities(rows: list[dict], table, update_cols: list[str]) -> dict[str, uuid.UUID]:
+    """Bulk upsert entity rows; return {external_ref: our generated UUID}.
+
+    Each row is stamped with a fresh UUID for the INSERT case; on conflict the
+    existing row keeps its UUID (id is not in update_cols) and RETURNING hands
+    back whichever id actually persisted.
+    """
     if not rows:
         return {}
     # Postgres refuses to update the same conflict target twice in one statement,
-    # so collapse duplicate (source, source_id) rows first (last one wins).
-    deduped = {(r["source"], r["source_id"]): r for r in rows}
+    # so collapse duplicate external_ref rows first (last one wins), and give
+    # each a candidate id for the insert path.
+    deduped: dict[str, dict] = {}
+    for r in rows:
+        r.setdefault("id", uuid.uuid4())
+        deduped[r["external_ref"]] = r
     unique_rows = list(deduped.values())
 
-    id_map: dict[str, int] = {}
+    id_map: dict[str, uuid.UUID] = {}
     with session_scope() as session:
         for start in range(0, len(unique_rows), _UPSERT_CHUNK):
             chunk = unique_rows[start : start + _UPSERT_CHUNK]
             stmt = insert(table).values(chunk)
             stmt = stmt.on_conflict_do_update(
-                index_elements=["source", "source_id"],
+                index_elements=["external_ref"],
                 set_={c: stmt.excluded[c] for c in update_cols},
-            ).returning(table.id, table.source_id)
-            for row_id, source_id in session.execute(stmt).all():
-                id_map[source_id] = row_id
+            ).returning(table.id, table.external_ref)
+            for row_id, ref in session.execute(stmt).all():
+                id_map[ref] = row_id
     return id_map
 
 
-def upsert_developers(developers: list[Developer]) -> dict[str, int]:
+def upsert_developers(developers: list[Developer]) -> dict[str, uuid.UUID]:
     now = datetime.now(timezone.utc)
+    smap = source_id_map()
     rows = [
         {
-            "source": d.source,
-            "source_id": d.source_id,
+            "source_id": smap[d.source],
+            "external_ref": external_ref(d.source, d.source_id),
             "name": d.name,
             "slug": d.slug,
             "logo_url": d.logo_url,
@@ -155,12 +180,13 @@ def upsert_developers(developers: list[Developer]) -> dict[str, int]:
     )
 
 
-def upsert_areas(areas: list[Area]) -> dict[str, int]:
+def upsert_areas(areas: list[Area]) -> dict[str, uuid.UUID]:
     now = datetime.now(timezone.utc)
+    smap = source_id_map()
     rows = [
         {
-            "source": a.source,
-            "source_id": a.source_id,
+            "source_id": smap[a.source],
+            "external_ref": external_ref(a.source, a.source_id),
             "name": a.name,
             "slug": a.slug,
             "city": a.city,
@@ -175,17 +201,24 @@ def upsert_areas(areas: list[Area]) -> dict[str, int]:
 
 
 def upsert_projects(
-    projects: list[Project], dev_map: dict[str, int], area_map: dict[str, int]
-) -> dict[str, int]:
+    projects: list[Project],
+    dev_map: dict[str, uuid.UUID],
+    area_map: dict[str, uuid.UUID],
+) -> dict[str, uuid.UUID]:
     now = datetime.now(timezone.utc)
+    smap = source_id_map()
     rows = [
         {
-            "source": p.source,
-            "source_id": p.source_id,
+            "source_id": smap[p.source],
+            "external_ref": external_ref(p.source, p.source_id),
             "name": p.name,
             "slug": p.slug,
-            "developer_id": dev_map.get(p.developer_source_id),
-            "area_id": area_map.get(p.area_source_id),
+            "developer_id": dev_map.get(external_ref(p.source, p.developer_source_id))
+            if p.developer_source_id
+            else None,
+            "area_id": area_map.get(external_ref(p.source, p.area_source_id))
+            if p.area_source_id
+            else None,
             "min_price": p.min_price,
             "currency": p.currency,
             "property_types": p.property_types,
@@ -220,13 +253,16 @@ def upsert_projects(
     )
 
 
-def upsert_units(units: list[Unit], project_map: dict[str, int]) -> int:
+def upsert_units(units: list[Unit], project_map: dict[str, uuid.UUID]) -> int:
     now = datetime.now(timezone.utc)
+    smap = source_id_map()
     rows = [
         {
-            "source": u.source,
-            "source_id": u.source_id,
-            "project_id": project_map.get(u.project_source_id),
+            "source_id": smap[u.source],
+            "external_ref": external_ref(u.source, u.source_id),
+            "project_id": project_map.get(external_ref(u.source, u.project_source_id))
+            if u.project_source_id
+            else None,
             "property_type": u.property_type,
             "unit_area_sqm": u.unit_area_sqm,
             "bedrooms": u.bedrooms,
@@ -257,20 +293,24 @@ def upsert_units(units: list[Unit], project_map: dict[str, int]) -> int:
             "last_synced_at",
         ],
     )
-    return len({(r["source"], r["source_id"]) for r in rows})
+    return len({r["external_ref"] for r in rows})
 
 
-def save_availability(snapshots: list[Availability], project_map: dict[str, int]) -> int:
+def save_availability(
+    snapshots: list[Availability], project_map: dict[str, uuid.UUID]
+) -> int:
     """Insert availability snapshots (append-only — each is a point in time)."""
+    smap = source_id_map()
     saved = 0
     with session_scope() as session:
         for snap in snapshots:
-            project_id = project_map.get(snap.project_source_id)
+            project_id = project_map.get(external_ref(snap.source, snap.project_source_id))
             if project_id is None:
                 continue
             session.add(
                 AvailabilityRow(
                     project_id=project_id,
+                    source_id=smap[snap.source],
                     snapshot_at=snap.snapshot_at,
                     total_units=snap.total_units,
                     available_units=snap.available_units,
@@ -289,6 +329,7 @@ def save_availability(snapshots: list[Availability], project_map: dict[str, int]
 def entity_counts() -> dict[str, int]:
     """Row counts for the relational tables — used by the backfill summary."""
     tables = {
+        "sources": SourceRow,
         "developers": DeveloperRow,
         "areas": AreaRow,
         "projects": ProjectRow,

@@ -270,6 +270,7 @@ def compute_availability(units: list[Unit], snapshot_at: datetime) -> list[Avail
 
         snapshots.append(
             Availability(
+                source=group[0].source,
                 project_source_id=project_source_id,
                 snapshot_at=snapshot_at,
                 total_units=len(group),
