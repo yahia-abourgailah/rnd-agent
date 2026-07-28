@@ -94,3 +94,33 @@ class PaymentTermsResponse(BaseModel):
     market_avg_down_payment_pct: float | None
     market_avg_installment_years: float | None
     results: list[PaymentTermsRow]
+
+
+class DuplicateStat(BaseModel):
+    total: int
+    unique: int
+    duplicates: int
+    duplicate_rate_pct: float
+
+
+class SourceCoverageRow(BaseModel):
+    source: str
+    projects: int
+    shared_with_other_source: int
+    unique_to_source: int
+
+
+class CompletenessStat(BaseModel):
+    projects: int
+    with_price_pct: float
+    with_developer_pct: float
+    with_area_pct: float
+    with_delivery_date_pct: float
+
+
+class QualityResponse(BaseModel):
+    developers: DuplicateStat
+    projects: DuplicateStat
+    source_coverage: list[SourceCoverageRow]
+    completeness: CompletenessStat
+    note: str

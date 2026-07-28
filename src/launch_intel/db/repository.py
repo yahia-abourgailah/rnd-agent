@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from launch_intel.db.engine import session_scope
@@ -324,6 +324,80 @@ def save_availability(
             )
             saved += 1
     return saved
+
+
+def all_developers() -> list[dict]:
+    """Every developer as a plain dict for the dedup matcher."""
+    with session_scope() as session:
+        rows = session.execute(
+            select(DeveloperRow.id, DeveloperRow.name, DeveloperRow.source_id)
+        ).all()
+        return [{"id": r.id, "name": r.name, "source_id": r.source_id} for r in rows]
+
+
+def all_projects_for_dedup() -> list[dict]:
+    """Every project with the fields dedup blocks/matches on."""
+    with session_scope() as session:
+        rows = session.execute(
+            select(
+                ProjectRow.id,
+                ProjectRow.name,
+                ProjectRow.source_id,
+                ProjectRow.developer_id,
+                ProjectRow.area_id,
+            )
+        ).all()
+        return [
+            {
+                "id": r.id,
+                "name": r.name,
+                "source_id": r.source_id,
+                "developer_id": r.developer_id,
+                "area_id": r.area_id,
+            }
+            for r in rows
+        ]
+
+
+def set_canonicals(table, mapping: dict) -> int:
+    """Write canonical_id for each {duplicate_id -> canonical_id}. Clears
+    canonical_id on rows not in the mapping so re-running is idempotent."""
+    with session_scope() as session:
+        session.execute(update(table).values(canonical_id=None))  # reset
+        for dup_id, canonical_id in mapping.items():
+            session.execute(
+                update(table).where(table.id == dup_id).values(canonical_id=canonical_id)
+            )
+    return len(mapping)
+
+
+def set_developer_canonicals(mapping: dict) -> int:
+    return set_canonicals(DeveloperRow, mapping)
+
+
+def set_project_canonicals(mapping: dict) -> int:
+    return set_canonicals(ProjectRow, mapping)
+
+
+def remap_projects_to_canonical_developers() -> int:
+    """After developer dedup, repoint projects whose developer is a duplicate to
+    the canonical developer — so grouping by developer_id is correct even without
+    reading canonical_id everywhere."""
+    with session_scope() as session:
+        dup = session.execute(
+            select(DeveloperRow.id, DeveloperRow.canonical_id).where(
+                DeveloperRow.canonical_id.isnot(None)
+            )
+        ).all()
+        n = 0
+        for dev_id, canonical_id in dup:
+            result = session.execute(
+                update(ProjectRow)
+                .where(ProjectRow.developer_id == dev_id)
+                .values(developer_id=canonical_id)
+            )
+            n += result.rowcount or 0
+    return n
 
 
 def entity_counts() -> dict[str, int]:
