@@ -31,9 +31,15 @@ def _round(value: float | None) -> float | None:
 router = APIRouter(prefix="/insights", tags=["insights"])
 
 
-def _scoped(stmt, source: str | None, zone: str | None):
-    """Apply optional source/zone filters to any Project-based query, so the
-    per-developer counts and the total share the exact same scope."""
+def _scoped(stmt, source: str | None, zone: str | None, dedup: bool = True):
+    """Apply optional dedup/source/zone filters to any Project-based query, so
+    every aggregate in an endpoint shares the exact same scope.
+
+    dedup=True counts only canonical projects (canonical_id IS NULL) — the
+    unique deduped market — so cross-source duplicates aren't double-counted.
+    """
+    if dedup:
+        stmt = stmt.where(Project.canonical_id.is_(None))
     if source:
         stmt = stmt.join(Source, Source.id == Project.source_id).where(Source.name == source)
     if zone:
@@ -45,14 +51,15 @@ def _scoped(stmt, source: str | None, zone: str | None):
 def market_share(
     source: str | None = Query(None, description="Filter by source name, e.g. 'nawy'"),
     zone: str | None = Query(None, description="Filter by area/zone name"),
+    dedup: bool = Query(True, description="Count unique (deduped) projects only"),
     limit: int = Query(15, ge=1, le=100),
     session: Session = Depends(get_session),
 ) -> MarketShareResponse:
     """Developer market share by number of projects.
 
-    NOTE: without a `source` filter, the same real developer seen by two sources
-    (e.g. "SODIC" from Nawy and "Sodic" from Property Finder) counts twice until
-    cross-source dedup runs. Scope by a single source for clean shares.
+    With dedup=True (default) the same real developer/project seen by both
+    sources is counted once — projects were repointed to the canonical developer
+    and duplicate projects are excluded. Set dedup=False for raw per-source rows.
     """
     per_dev = _scoped(
         select(Developer.id, Developer.name, func.count(Project.id).label("projects"))
@@ -61,12 +68,13 @@ def market_share(
         .order_by(func.count(Project.id).desc()),
         source,
         zone,
+        dedup,
     ).limit(limit)
 
-    total = session.scalar(_scoped(select(func.count(Project.id)), source, zone)) or 0
+    total = session.scalar(_scoped(select(func.count(Project.id)), source, zone, dedup)) or 0
     dev_count = (
         session.scalar(
-            _scoped(select(func.count(func.distinct(Project.developer_id))), source, zone)
+            _scoped(select(func.count(func.distinct(Project.developer_id))), source, zone, dedup)
         )
         or 0
     )
@@ -92,6 +100,7 @@ def market_share(
 @router.get("/zones", response_model=ZonesResponse)
 def zones(
     source: str | None = Query(None, description="Filter by source name"),
+    dedup: bool = Query(True, description="Count unique (deduped) projects only"),
     limit: int = Query(20, ge=1, le=100),
     session: Session = Depends(get_session),
 ) -> ZonesResponse:
@@ -114,6 +123,7 @@ def zones(
         .order_by(func.count(Project.id).desc()),
         source,
         None,
+        dedup,
     ).limit(limit)
 
     results = [
@@ -138,6 +148,7 @@ _PRICE_BRACKETS = ["under 5M", "5M–10M", "10M–20M", "20M–50M", "50M+"]
 @router.get("/price-distribution", response_model=PriceDistributionResponse)
 def price_distribution(
     source: str | None = Query(None, description="Filter by source name"),
+    dedup: bool = Query(True, description="Count unique (deduped) projects only"),
     session: Session = Depends(get_session),
 ) -> PriceDistributionResponse:
     """How the market splits across price brackets (starting price, EGP)."""
@@ -154,6 +165,7 @@ def price_distribution(
         .group_by(bracket),
         source,
         None,
+        dedup,
     )
     counts = {b: n for b, n in session.execute(stmt).all()}
     total = sum(counts.values())
@@ -171,10 +183,11 @@ def price_distribution(
 @router.get("/property-mix", response_model=PropertyMixResponse)
 def property_mix(
     source: str | None = Query(None, description="Filter by source name"),
+    dedup: bool = Query(True, description="Count unique (deduped) projects only"),
     session: Session = Depends(get_session),
 ) -> PropertyMixResponse:
     """Project counts by property type (a project can offer several)."""
-    base = _scoped(select(func.unnest(Project.property_types).label("ptype")), source, None)
+    base = _scoped(select(func.unnest(Project.property_types).label("ptype")), source, None, dedup)
     sub = base.subquery()
     stmt = (
         select(sub.c.ptype, func.count().label("n"))
@@ -192,6 +205,7 @@ def property_mix(
 @router.get("/delivery-pipeline", response_model=DeliveryPipelineResponse)
 def delivery_pipeline(
     source: str | None = Query(None, description="Filter by source name"),
+    dedup: bool = Query(True, description="Count unique (deduped) projects only"),
     session: Session = Depends(get_session),
 ) -> DeliveryPipelineResponse:
     """Projects by delivery year — the supply pipeline coming online."""
@@ -203,6 +217,7 @@ def delivery_pipeline(
         .order_by(year),
         source,
         None,
+        dedup,
     )
     results = [DeliveryYearRow(year=y, projects=n) for y, n in session.execute(stmt).all()]
     return DeliveryPipelineResponse(source=source, results=results)
@@ -217,6 +232,7 @@ def _norm(value: float, low: float, high: float) -> float:
 def whitespace(
     source: str | None = Query(None, description="Filter by source name"),
     min_projects: int = Query(5, ge=1, description="Ignore thinly-covered zones"),
+    dedup: bool = Query(True, description="Count unique (deduped) projects only"),
     limit: int = Query(15, ge=1, le=100),
     session: Session = Depends(get_session),
 ) -> WhitespaceResponse:
@@ -237,6 +253,7 @@ def whitespace(
         .having(func.count(Project.id) >= min_projects),
         source,
         None,
+        dedup,
     )
     rows = session.execute(stmt).all()
     if not rows:
@@ -292,6 +309,7 @@ def _installment_years():
 def payment_terms(
     source: str | None = Query(None, description="Filter by source name"),
     min_projects: int = Query(3, ge=1, description="Ignore developers with few priced projects"),
+    dedup: bool = Query(True, description="Count unique (deduped) projects only"),
     limit: int = Query(20, ge=1, le=100),
     session: Session = Depends(get_session),
 ) -> PaymentTermsResponse:
@@ -314,6 +332,7 @@ def payment_terms(
         .order_by(func.avg(down_payment).asc()),
         source,
         None,
+        dedup,
     ).limit(limit)
 
     results = [
@@ -330,6 +349,7 @@ def payment_terms(
         select(func.avg(down_payment), func.avg(years)).where(down_payment.isnot(None)),
         source,
         None,
+        dedup,
     )
     mdp, myr = session.execute(market).one()
     return PaymentTermsResponse(

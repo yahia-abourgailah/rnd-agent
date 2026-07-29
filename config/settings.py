@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     slack_bot_token: str = ""
     slack_alert_channel: str = "#launch-alerts"
 
+    # --- API auth ---
+    # Shared secret the CRM backend sends as the `X-API-Key` header. Set via the
+    # API_KEY env var. Empty = auth disabled (local dev only); production MUST set
+    # a strong value. Lives server-side on the caller — never in browser code.
+    api_key: str = ""
+
     # --- Crawling ---
     # User-Agent sent on every request (both httpx and Playwright). Neutral by
     # design: it identifies the traffic as an automated research crawler without
