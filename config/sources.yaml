@@ -5,11 +5,11 @@
 # src/launch_intel/watch/adapters/__init__.py
 
 sources:
-  - name: generic_developer_demo
+  - name: nawy
     tier: 1
-    source_type: developer_site
+    source_type: aggregator
     urls:
-      - "https://example-developer.com/launches"
+      - "https://www.nawy.com/new-launches"
     crawl_frequency: "30m"
     adapter_name: generic_developer_site
 
