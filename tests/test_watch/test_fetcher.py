@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from config.settings import settings
+from src.config.settings import settings
 from launch_intel.watch.fetcher import Fetcher, _is_retryable
 
 

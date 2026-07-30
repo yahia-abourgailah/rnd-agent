@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 import httpx
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
-from config.settings import settings
+from src.config.settings import settings
 from launch_intel.models import ContentType, RawPage
 
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}

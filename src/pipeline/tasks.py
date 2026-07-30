@@ -3,7 +3,7 @@ import logging
 import yaml
 from prefect import task
 
-from config.settings import settings
+from src.config.settings import settings
 from launch_intel.db.repository import save_launches, store_fetch
 from launch_intel.extract import extract_launches
 from launch_intel.models import Candidate, Launch, RawPage, SourceConfig

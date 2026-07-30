@@ -3,7 +3,7 @@ Tests for the layered configuration: env vars beat defaults, ENV selects the
 per-environment source registry, and no secret has a real default baked in.
 """
 
-from config.settings import CONFIG_DIR, Environment, Settings
+from src.config.settings import CONFIG_DIR, Environment, Settings
 
 
 def test_defaults_are_development(monkeypatch):

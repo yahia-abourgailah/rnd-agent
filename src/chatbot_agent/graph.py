@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 
-from state import State
-from nodes.chatbot import chatbot
+from chatbot_agent.state import State
+from chatbot_agent.nodes.chatbot import chatbot
 
 builder = StateGraph(State)
 

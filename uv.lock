@@ -1846,71 +1846,6 @@ wheels = [
 ]
 
 [[package]]
-name = "launch-intel"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "alembic" },
-    { name = "beautifulsoup4" },
-    { name = "celery" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "openai" },
-    { name = "pgvector" },
-    { name = "playwright" },
-    { name = "prefect" },
-    { name = "psycopg", extra = ["binary"] },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "pyyaml" },
-    { name = "rapidfuzz" },
-    { name = "redis" },
-    { name = "scrapegraphai", version = "1.76.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "scrapegraphai", version = "2.1.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "slack-sdk" },
-    { name = "sqlalchemy" },
-    { name = "tenacity" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-httpx" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = ">=1.13" },
-    { name = "beautifulsoup4", specifier = ">=4.12" },
-    { name = "celery", specifier = ">=5.4" },
-    { name = "fastapi", specifier = ">=0.111" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "openai", specifier = ">=1.30" },
-    { name = "pgvector", specifier = ">=0.2" },
-    { name = "playwright", specifier = ">=1.44" },
-    { name = "prefect", specifier = ">=2.19" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.1" },
-    { name = "pydantic", specifier = ">=2.7" },
-    { name = "pydantic-settings", specifier = ">=2.3" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.2" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
-    { name = "pytest-httpx", marker = "extra == 'dev'", specifier = ">=0.30" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "rapidfuzz", specifier = ">=3.9" },
-    { name = "redis", specifier = ">=5.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
-    { name = "scrapegraphai", specifier = ">=1.30" },
-    { name = "slack-sdk", specifier = ">=3.27" },
-    { name = "sqlalchemy", specifier = ">=2.0" },
-    { name = "tenacity", specifier = ">=8.3" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
-]
-provides-extras = ["dev"]
-
-[[package]]
 name = "lxml"
 version = "6.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3693,6 +3628,71 @@ sdist = { url = "https://files.pythonhosted.org/packages/e2/d6/d0b9fafc73b657672
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/68/1fc93dd759605b5d00fc98b50200739e41ed32bd22d6ba35ca6c3932371b/rich_rst-2.1.0-py3-none-any.whl", hash = "sha256:7ecd1343ee12c879d0e7ae74c3eb6d263b023d2929c6d114212eb1fd91057255", size = 272987, upload-time = "2026-07-05T02:59:42.792Z" },
 ]
+
+[[package]]
+name = "rnd-agent"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "alembic" },
+    { name = "beautifulsoup4" },
+    { name = "celery" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "openai" },
+    { name = "pgvector" },
+    { name = "playwright" },
+    { name = "prefect" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "pyyaml" },
+    { name = "rapidfuzz" },
+    { name = "redis" },
+    { name = "scrapegraphai", version = "1.76.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scrapegraphai", version = "2.1.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "slack-sdk" },
+    { name = "sqlalchemy" },
+    { name = "tenacity" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-httpx" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "alembic", specifier = ">=1.13" },
+    { name = "beautifulsoup4", specifier = ">=4.12" },
+    { name = "celery", specifier = ">=5.4" },
+    { name = "fastapi", specifier = ">=0.111" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "openai", specifier = ">=1.30" },
+    { name = "pgvector", specifier = ">=0.2" },
+    { name = "playwright", specifier = ">=1.44" },
+    { name = "prefect", specifier = ">=2.19" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.1" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pydantic-settings", specifier = ">=2.3" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.2" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
+    { name = "pytest-httpx", marker = "extra == 'dev'", specifier = ">=0.30" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "rapidfuzz", specifier = ">=3.9" },
+    { name = "redis", specifier = ">=5.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
+    { name = "scrapegraphai", specifier = ">=1.30" },
+    { name = "slack-sdk", specifier = ">=3.27" },
+    { name = "sqlalchemy", specifier = ">=2.0" },
+    { name = "tenacity", specifier = ">=8.3" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
+]
+provides-extras = ["dev"]
 
 [[package]]
 name = "rpds-py"
