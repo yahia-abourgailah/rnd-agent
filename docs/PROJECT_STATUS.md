@@ -23,7 +23,7 @@ Watch → Extract → Dedup → Store → Notify
 > The flat-`launches` launch-detection path still has no dedup (teammate's).
 > An **insights API** (§6) and **API-key auth** now sit on top of the catalogue.
 
-Each stage is a self-contained module under `src/launch_intel/`. Stages
+Each stage is a self-contained module under `src/`. Stages
 communicate only through the shared Pydantic models in `models/`. Two design
 rules hold throughout:
 
@@ -201,7 +201,7 @@ python scripts/dedup.py                         # link cross-source duplicates (
 
 ## 5a. Second source: Property Finder — ✅ BUILT
 
-`src/launch_intel/backfill/property_finder_client.py`. Same pattern as Nawy:
+`src/backfill/property_finder_client.py`. Same pattern as Nawy:
 reads `__NEXT_DATA__` from `propertyfinder.eg/en/new-projects` (paginated, ~56
 pages, 1,341 projects), maps to our models, no LLM. Developers and areas are
 **derived from the projects** (PF has no standalone feeds); areas are grouped at
@@ -210,7 +210,7 @@ projects/developers/areas only. Rows land in the same tables with `source_id=2`.
 
 ## 5b. Cross-source dedup — ✅ BUILT
 
-`src/launch_intel/dedup/` (`normalize.py`, `matcher.py`, `resolver.py`) +
+`src/dedup/` (`normalize.py`, `matcher.py`, `resolver.py`) +
 `scripts/dedup.py`. Links the same real entity seen by both sources:
 - **Normalize** names to a match key (strip case, punctuation, noise words like
   "Developments"/"Group") — `"SODIC Developments"` and `"Sodic"` → `"sodic"`.
@@ -230,10 +230,10 @@ projects/developers/areas only. Rows land in the same tables with `source_id=2`.
 **We own the data + API; the full-stack interns build the React/Next.js charts.**
 Full reference for them: `docs/DASHBOARD_API.md`.
 
-Run the API: `python -m uvicorn launch_intel.api.main:app --port 8000`
+Run the API: `python -m uvicorn api.main:app --port 8000`
 (Swagger at `/docs`, spec at `/openapi.json`.)
 
-**8 live insight endpoints** (`src/launch_intel/api/routes/insights.py` &
+**8 live insight endpoints** (`src/api/routes/insights.py` &
 `monitoring.py`), all over the deduped catalogue:
 
 | Endpoint | Answers |
@@ -251,7 +251,7 @@ Run the API: `python -m uvicorn launch_intel.api.main:app --port 8000`
   count unique deduped projects), `limit`, some take `zone`.
 - **CORS** enabled (browser apps can call it).
 - **Auth:** every data endpoint requires an `X-API-Key` header
-  (`src/launch_intel/api/security.py`); key set via `API_KEY` env
+  (`src/api/security.py`); key set via `API_KEY` env
   (`config/settings.py`). `/health` is open. Empty `API_KEY` disables auth
   (local dev only). The key lives in the CRM **backend**, never in browser code.
 
@@ -290,7 +290,7 @@ python scripts\backfill.py --source property_finder   # Property Finder (2nd sou
 python scripts\dedup.py
 
 # 5d. Serve the insights API (needs API_KEY in .env for auth)
-python -m uvicorn launch_intel.api.main:app --port 8000   # docs at /docs
+python -m uvicorn api.main:app --port 8000   # docs at /docs
 
 # 6. Inspect the data
 docker compose exec postgres psql -U launch_intel -d launch_intel
@@ -318,8 +318,9 @@ docker compose exec postgres psql -U launch_intel -d launch_intel
 ## 8. Repo map
 
 ```
-config/            settings.py (env-layered), sources.<env>.yaml (crawl registry — separate from the DB sources table)
-src/launch_intel/
+src/                import root (on PYTHONPATH; packages below are top-level: `from watch.fetcher import Fetcher`)
+  config/          settings.py (env-layered), sources.<env>.yaml (crawl registry — separate from the DB sources table)
+  chatbot_agent/   LangGraph SQL chatbot over the warehouse (graph, nodes/, tools/)
   models/          shared contract: Launch, SourceConfig, RawPage, Candidate + relational: Developer, Area, Project, Unit, Availability
   watch/           fetcher, change_detector, base adapter, adapters/ (nawy real; others stubs)
   extract/         extractor (ScrapeGraphAI), prompts, normalize
@@ -349,8 +350,15 @@ Migrations (Alembic, in order): `e2cf8c9`-era flat tables → `b7f1a2c3d4e5`
   history → price movement, absorption velocity, new-entrant detection. History
   only builds going forward, so start it early. (May want a project-price snapshot
   table so price-movement covers all projects, not just the 24 with units.)
-- **Chatbot (new idea):** text-to-SQL over the relational schema; the FKs make
-  the joins possible.
+- **Chatbot (`src/chatbot_agent/`):** text-to-SQL over the relational schema; the
+  FKs make the joins possible. LangGraph loop (`chatbot` ↔ `tools`) against the
+  self-hosted `gemma-4` endpoint (`LLM_BASE_URL`). Run it with
+  `python -m chatbot_agent.app`. **Before any shared environment: set
+  `DATABASE_READONLY_URL` to a `GRANT SELECT`-only role.** The SQL it runs is
+  LLM-authored; `tools/postgres.py` refuses anything but a single SELECT/WITH
+  and runs it in a READ ONLY transaction with a statement timeout, but the
+  least-privilege role is the defence that shouldn't be skipped.
+  Still open: no eval set for SQL accuracy, and no UI beyond the CLI.
 - **Lead-time tracking (#21) + confidence scoring** — self-contained code tasks.
 - **Notifications:** router/digest logic is buildable; Slack *delivery* needs a
   `SLACK_BOT_TOKEN`.

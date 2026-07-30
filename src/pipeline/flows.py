@@ -4,14 +4,14 @@ import sys
 
 from prefect import flow
 
-from launch_intel.pipeline.tasks import (
+from pipeline.tasks import (
     extract_candidates,
     fetch_source_pages,
     find_changed_candidates,
     load_source_config,
     persist_launches,
 )
-from launch_intel.watch import ChangeDetector
+from watch import ChangeDetector
 
 logger = logging.getLogger(__name__)
 

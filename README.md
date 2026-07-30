@@ -11,9 +11,9 @@ and notifies the R&D team with source links.
 Watch → Extract → Dedup → Store → Notify
 ```
 
-Each stage is a self-contained module under `src/launch_intel/`. Stages
+Each stage is a self-contained module under `src/`. Stages
 communicate **only** through the shared Pydantic models in
-`src/launch_intel/models/`. Detection and extraction are deliberately
+`src/models/`. Detection and extraction are deliberately
 separate: `watch/change_detector.py` cheaply detects whether a page changed;
 `extract/extractor.py` (an expensive LLM call) only runs on content that did.
 
@@ -50,7 +50,7 @@ make crawl SOURCE=generic_developer_demo
 
 ## Adding a source
 
-1. Write an adapter in `src/launch_intel/watch/adapters/your_source.py`
+1. Write an adapter in `src/watch/adapters/your_source.py`
    implementing `BaseAdapter` (see `watch/base.py`).
 2. Register it in `watch/adapters/__init__.py`.
 3. Add one entry to `config/sources.yaml` pointing `adapter_name` at it.
@@ -99,6 +99,6 @@ image forward — never build a separate prod artifact. DB migrations
 
 ## Shared contract
 
-See `src/launch_intel/models/launch.py` for the canonical `Launch` schema.
+See `src/models/launch.py` for the canonical `Launch` schema.
 **Do not change these models without syncing with the other developer** —
 the dedup/notify side is built directly against this contract.

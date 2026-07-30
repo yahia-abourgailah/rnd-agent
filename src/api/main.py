@@ -1,8 +1,8 @@
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from launch_intel.api.routes import feedback, health, insights, launches, monitoring
-from launch_intel.api.security import require_api_key
+from api.routes import feedback, health, insights, launches, monitoring
+from api.security import require_api_key
 
 app = FastAPI(title="Launch Intelligence API")
 

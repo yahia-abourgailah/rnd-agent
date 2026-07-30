@@ -1,3 +1,7 @@
-"""chatbot_agent.nodes package init"""
+"""Graph nodes for the chatbot agent.
 
-__all__ = ["chatbot"]
+Nothing is re-exported here on purpose: the `chatbot` node lives in a module of
+the same name, so `from .chatbot import chatbot` would bind the function to
+`chatbot_agent.nodes.chatbot` and shadow the module itself. Import from the
+full path instead.
+"""

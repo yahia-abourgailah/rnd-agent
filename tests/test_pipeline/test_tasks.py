@@ -1,7 +1,7 @@
 import pytest
 
-from launch_intel.models import SourceTier, SourceType
-from launch_intel.pipeline.tasks import load_source_config
+from models import SourceTier, SourceType
+from pipeline.tasks import load_source_config
 
 REGISTRY_YAML = """\
 sources:

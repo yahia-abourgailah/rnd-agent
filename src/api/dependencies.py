@@ -2,7 +2,7 @@ from collections.abc import Iterator
 
 from sqlalchemy.orm import Session
 
-from launch_intel.db.engine import SessionLocal
+from db.engine import SessionLocal
 
 
 def get_session() -> Iterator[Session]:

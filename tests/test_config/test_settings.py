@@ -3,7 +3,7 @@ Tests for the layered configuration: env vars beat defaults, ENV selects the
 per-environment source registry, and no secret has a real default baked in.
 """
 
-from src.config.settings import CONFIG_DIR, Environment, Settings
+from config.settings import CONFIG_DIR, Environment, Settings
 
 
 def test_defaults_are_development(monkeypatch):
@@ -46,7 +46,7 @@ def test_graph_config_omits_base_url_when_unset(monkeypatch):
     Patches the live settings object rather than the environment, so the result
     does not depend on whatever a developer happens to have in their .env.
     """
-    from launch_intel.extract import extractor
+    from extract import extractor
 
     monkeypatch.setattr(extractor.settings, "llm_base_url", "")
     monkeypatch.setattr(extractor.settings, "llm_model_tokens", None)
@@ -58,7 +58,7 @@ def test_graph_config_omits_base_url_when_unset(monkeypatch):
 
 def test_graph_config_routes_to_custom_endpoint(monkeypatch):
     """A self-hosted / company gateway is selected purely by config."""
-    from launch_intel.extract import extractor
+    from extract import extractor
 
     monkeypatch.setattr(extractor.settings, "llm_base_url", "https://llm.internal/v1")
     monkeypatch.setattr(extractor.settings, "llm_model_tokens", 8192)

@@ -8,9 +8,9 @@ import asyncio
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from src.launch_intel.pipeline.flows import crawl_one_source  # noqa: E402
+from pipeline.flows import crawl_one_source  # noqa: E402
 
 
 def main() -> None:

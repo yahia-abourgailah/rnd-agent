@@ -27,6 +27,12 @@ class Settings(BaseSettings):
 
     # --- Database (TODO(phase-later): consumed once db/engine.py is implemented) ---
     database_url: str = "postgresql+psycopg://launch_intel:launch_intel@localhost:5432/launch_intel"
+    # Separate least-privilege credentials for anything that runs SQL authored
+    # by an LLM (chatbot_agent). Falls back to database_url so local dev works
+    # out of the box — production MUST point this at a GRANT SELECT-only role.
+    # The read-only transaction in chatbot_agent/tools/postgres.py is the
+    # backstop; this is the primary defence.
+    database_readonly_url: str = ""
 
     # --- Redis / Celery (TODO(phase-later)) ---
     redis_url: str = "redis://localhost:6379/0"
@@ -45,6 +51,17 @@ class Settings(BaseSettings):
     # Context window for the model. Only needed for models ScrapeGraphAI does
     # not know (it defaults to 8192 and logs a warning otherwise).
     llm_model_tokens: int | None = None
+
+    # --- Chatbot agent (LangGraph, question -> SQL over the warehouse) ---
+    # Self-hosted model behind an OpenAI-compatible endpoint. The id is
+    # unprefixed here (init_chat_model takes the provider separately), unlike
+    # ScrapeGraphAI's "openai/..." form above. Endpoint and key are shared with
+    # extraction: LLM_BASE_URL + OPENAI_API_KEY.
+    chatbot_model: str = "gemma-4"
+    # Hard caps on LLM-authored SQL: server-side cancel for runaway scans, and a
+    # row cap so a SELECT * on launches can't flood the model's context.
+    chatbot_sql_timeout_seconds: float = 15.0
+    chatbot_sql_max_rows: int = 100
 
     # --- Slack (TODO(phase-later)) ---
     slack_bot_token: str = ""
@@ -70,6 +87,11 @@ class Settings(BaseSettings):
     )
 
     log_level: str = "INFO"
+
+    @property
+    def readonly_database_url(self) -> str:
+        """Least-privilege URL for LLM-authored SQL; the main URL if unset."""
+        return self.database_readonly_url or self.database_url
 
     @property
     def is_production(self) -> bool:

@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir playwright && playwright install --with-deps chro
 
 COPY . .
 
-CMD ["python", "-m", "launch_intel.pipeline.flows"]
+CMD ["python", "-m", "pipeline.flows"]

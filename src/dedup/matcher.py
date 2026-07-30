@@ -11,7 +11,7 @@ from collections import defaultdict
 
 from rapidfuzz import fuzz
 
-from launch_intel.dedup.normalize import normalize_name
+from dedup.normalize import normalize_name
 
 DEFAULT_THRESHOLD = 90  # token_sort_ratio; strict enough to avoid false merges
 _NUM_RE = re.compile(r"\d+")

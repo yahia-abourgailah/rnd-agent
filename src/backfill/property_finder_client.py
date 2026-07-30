@@ -19,8 +19,8 @@ import json
 import logging
 import re
 
-from launch_intel.models import Area, Developer, Project
-from launch_intel.watch.fetcher import Fetcher
+from models import Area, Developer, Project
+from watch.fetcher import Fetcher
 
 logger = logging.getLogger(__name__)
 

@@ -20,15 +20,15 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 
-from launch_intel.models import Area, Availability, Developer, Project, Unit
-from launch_intel.watch.adapters.nawy import (
+from models import Area, Availability, Developer, Project, Unit
+from watch.adapters.nawy import (
     NawyAdapter,
     _IDS_PER_REQUEST,
     _MAX_PAGE_SIZE,
     _MAX_PAGES,
     _PROPERTIES_API,
 )
-from launch_intel.watch.fetcher import Fetcher
+from watch.fetcher import Fetcher
 
 logger = logging.getLogger(__name__)
 

@@ -1,3 +1,5 @@
-"""chatbot_agent.tools package init"""
+"""Tools the chatbot agent can call. Import-safe: nothing here connects."""
 
-__all__ = ["postgres"]
+from chatbot_agent.tools.postgres import TOOLS, describe_schema, query_database
+
+__all__ = ["TOOLS", "describe_schema", "query_database"]

@@ -24,6 +24,12 @@ dependencies = [
     "slack-sdk>=3.27",
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
+    # chatbot_agent — previously imported but undeclared, so the agent only ran
+    # where someone had pip-installed them by hand.
+    "langgraph>=0.2",
+    "langchain>=0.3",
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
 ]
 
 [project.optional-dependencies]
@@ -44,9 +50,16 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# Source registries and SQL/migration templates are runtime data, not just
+# build inputs — without this they are missing from an installed copy.
+[tool.setuptools.package-data]
+config = ["*.yaml"]
+db = ["migrations/*.mako", "migrations/versions/*.py"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 asyncio_mode = "auto"
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100

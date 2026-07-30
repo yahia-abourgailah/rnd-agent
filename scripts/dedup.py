@@ -17,10 +17,10 @@ import logging
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from launch_intel.db import repository as repo  # noqa: E402
-from launch_intel.dedup import matcher, resolver  # noqa: E402
+from db import repository as repo  # noqa: E402
+from dedup import matcher, resolver  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("dedup")

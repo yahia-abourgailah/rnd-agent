@@ -2,9 +2,9 @@ import json
 import re
 from collections import defaultdict
 
-from launch_intel.models import Candidate, ContentType, RawPage
-from launch_intel.watch.base import BaseAdapter
-from launch_intel.watch.change_detector import hash_content
+from models import Candidate, ContentType, RawPage
+from watch.base import BaseAdapter
+from watch.change_detector import hash_content
 
 # Nawy is a Next.js app: every page embeds its server-side props as JSON in a
 # __NEXT_DATA__ script tag. That payload is the same data the UI renders, but

@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import ClassVar
 
-from launch_intel.models import Candidate, RawPage, SourceConfig
-from launch_intel.watch.fetcher import Fetcher
+from models import Candidate, RawPage, SourceConfig
+from watch.fetcher import Fetcher
 
 
 class BaseAdapter(ABC):

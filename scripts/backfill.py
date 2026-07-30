@@ -19,12 +19,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from launch_intel.backfill import nawy_client as nc  # noqa: E402
-from launch_intel.backfill import property_finder_client as pf  # noqa: E402
-from launch_intel.db import repository as repo  # noqa: E402
-from launch_intel.watch.fetcher import Fetcher  # noqa: E402
+from backfill import nawy_client as nc  # noqa: E402
+from backfill import property_finder_client as pf  # noqa: E402
+from db import repository as repo  # noqa: E402
+from watch.fetcher import Fetcher  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("backfill")

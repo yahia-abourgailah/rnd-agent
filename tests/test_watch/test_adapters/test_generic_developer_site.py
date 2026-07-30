@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from launch_intel.models import ContentType, RawPage, SourceConfig, SourceTier, SourceType
-from launch_intel.watch.adapters.generic_developer_site import GenericDeveloperSiteAdapter
+from models import ContentType, RawPage, SourceConfig, SourceTier, SourceType
+from watch.adapters.generic_developer_site import GenericDeveloperSiteAdapter
 
 FIXTURE_PATH = (
     Path(__file__).resolve().parent.parent.parent / "fixtures" / "generic_developer_listing.html"

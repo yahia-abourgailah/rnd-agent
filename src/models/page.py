@@ -3,7 +3,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from launch_intel.models.source import SourceType
+from models.source import SourceType
 
 
 class ContentType(str, Enum):

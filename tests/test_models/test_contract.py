@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from launch_intel.models import (
+from models import (
     Launch,
     LaunchType,
     PropertyType,

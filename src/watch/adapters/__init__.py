@@ -1,9 +1,9 @@
-from launch_intel.watch.adapters.generic_developer_site import GenericDeveloperSiteAdapter
-from launch_intel.watch.adapters.nawy import NawyAdapter
-from launch_intel.watch.adapters.palm_hills import PalmHillsAdapter
-from launch_intel.watch.adapters.property_finder import PropertyFinderAdapter
-from launch_intel.watch.adapters.sodic import SodicAdapter
-from launch_intel.watch.base import BaseAdapter
+from watch.adapters.generic_developer_site import GenericDeveloperSiteAdapter
+from watch.adapters.nawy import NawyAdapter
+from watch.adapters.palm_hills import PalmHillsAdapter
+from watch.adapters.property_finder import PropertyFinderAdapter
+from watch.adapters.sodic import SodicAdapter
+from watch.base import BaseAdapter
 
 # Registry keyed on SourceConfig.adapter_name — how config/sources.yaml
 # selects which adapter class runs a given source.

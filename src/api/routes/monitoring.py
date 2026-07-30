@@ -3,9 +3,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from launch_intel.api.dependencies import get_session
-from launch_intel.api.schemas import QualityResponse
-from launch_intel.metrics import quality
+from api.dependencies import get_session
+from api.schemas import QualityResponse
+from metrics import quality
 
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 
