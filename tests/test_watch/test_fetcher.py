@@ -2,7 +2,7 @@ import httpx
 import pytest
 
 from src.config.settings import settings
-from launch_intel.watch.fetcher import Fetcher, _is_retryable
+from watch.fetcher import Fetcher, _is_retryable
 
 
 def test_404_is_not_retried():

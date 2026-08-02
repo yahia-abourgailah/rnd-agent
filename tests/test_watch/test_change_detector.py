@@ -1,4 +1,4 @@
-from launch_intel.watch.change_detector import ChangeDetector, hash_content
+from watch.change_detector import ChangeDetector, hash_content
 
 
 def test_hash_content_is_deterministic():

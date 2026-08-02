@@ -1,5 +1,5 @@
-from launch_intel.models import Candidate, RawPage
-from launch_intel.watch.base import BaseAdapter
+from models import Candidate, RawPage
+from watch.base import BaseAdapter
 
 # TODO(phase-later): PropertyFinder — check for a sitemap/JSON-LD feed of
 # new-project listings before resorting to full DOM scraping.

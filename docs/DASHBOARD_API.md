@@ -8,7 +8,7 @@ these — **we own the data + API, you own the screens.**
 
 ```bash
 # from the repo root, with the venv active and Postgres up
-python -m uvicorn launch_intel.api.main:app --port 8000
+python -m uvicorn api.main:app --port 8000
 ```
 
 - **Base URL (local dev):** `http://127.0.0.1:8000`

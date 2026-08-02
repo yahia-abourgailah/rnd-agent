@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
-from launch_intel.db.engine import session_scope
-from launch_intel.db.tables import (
+from db.engine import session_scope
+from db.tables import (
     Area as AreaRow,
     Availability as AvailabilityRow,
     Developer as DeveloperRow,
@@ -16,7 +16,7 @@ from launch_intel.db.tables import (
     Source as SourceRow,
     Unit as UnitRow,
 )
-from launch_intel.models import (
+from models import (
     Area,
     Availability,
     ContentType,
@@ -26,7 +26,7 @@ from launch_intel.models import (
     RawPage,
     Unit,
 )
-from launch_intel.watch.change_detector import hash_content
+from watch.change_detector import hash_content
 
 
 def store_fetch(page: RawPage, source_name: str, content_hash: str, changed: bool) -> None:

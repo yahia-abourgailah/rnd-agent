@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.launch_intel.pipeline.flows import crawl_one_source  # noqa: E402
+from src.pipeline.flows import crawl_one_source  # noqa: E402
 
 
 def main() -> None:

@@ -4,9 +4,9 @@ from typing import Protocol
 from pydantic import BaseModel, Field, field_validator
 
 from src.config.settings import settings
-from launch_intel.extract.normalize import normalize_developer, normalize_zone
-from launch_intel.extract.prompts import EXTRACTION_PROMPT
-from launch_intel.models import Candidate, Launch, LaunchType, PropertyType, SizeRange
+from extract.normalize import normalize_developer, normalize_zone
+from extract.prompts import EXTRACTION_PROMPT
+from models import Candidate, Launch, LaunchType, PropertyType, SizeRange
 
 
 class ExtractedFields(BaseModel):

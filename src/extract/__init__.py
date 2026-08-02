@@ -1,4 +1,4 @@
-from launch_intel.extract.extractor import (
+from extract.extractor import (
     ExtractedFields,
     ExtractedLaunches,
     extract_launches,

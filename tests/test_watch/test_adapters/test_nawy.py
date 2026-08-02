@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from launch_intel.models import ContentType, RawPage, SourceConfig, SourceTier, SourceType
-from launch_intel.watch.adapters.nawy import NawyAdapter
+from models import ContentType, RawPage, SourceConfig, SourceTier, SourceType
+from watch.adapters.nawy import NawyAdapter
 
 FIXTURES = Path(__file__).resolve().parent.parent.parent / "fixtures"
 LISTING = FIXTURES / "live" / "nawy_new_launches.html"

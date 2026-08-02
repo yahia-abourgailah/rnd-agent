@@ -1,8 +1,8 @@
 from datetime import datetime
 from unittest.mock import MagicMock
 
-from launch_intel.extract.extractor import ExtractedFields, ExtractedLaunches, extract_launches
-from launch_intel.models import Candidate, ContentType, LaunchType, SourceType
+from extract.extractor import ExtractedFields, ExtractedLaunches, extract_launches
+from models import Candidate, ContentType, LaunchType, SourceType
 
 
 def _make_candidate() -> Candidate:

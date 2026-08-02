@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import Float, case, cast, func, select
 from sqlalchemy.orm import Session
 
-from launch_intel.api.dependencies import get_session
-from launch_intel.api.schemas import (
+from api.dependencies import get_session
+from api.schemas import (
     DeliveryPipelineResponse,
     DeliveryYearRow,
     MarketShareResponse,
@@ -22,7 +22,7 @@ from launch_intel.api.schemas import (
     ZoneRow,
     ZonesResponse,
 )
-from launch_intel.db.tables import Area, Developer, Project, Source
+from db.tables import Area, Developer, Project, Source
 
 
 def _round(value: float | None) -> float | None:

@@ -4,7 +4,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from launch_intel.models.source import SourceType
+from models.source import SourceType
 
 
 class LaunchType(str, Enum):

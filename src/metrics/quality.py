@@ -9,7 +9,7 @@ here yet."""
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from launch_intel.db.tables import Developer, Project, Source
+from db.tables import Developer, Project, Source
 
 
 def _dup_stat(session: Session, table) -> dict:

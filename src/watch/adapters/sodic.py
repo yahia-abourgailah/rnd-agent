@@ -1,5 +1,5 @@
-from launch_intel.models import Candidate, RawPage
-from launch_intel.watch.base import BaseAdapter
+from models import Candidate, RawPage
+from watch.base import BaseAdapter
 
 # TODO(phase-later): SODIC's news page is likely simple enough that
 # GenericDeveloperSiteAdapter's default selector works with minor tweaks —
