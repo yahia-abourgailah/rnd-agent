@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     env: Environment = Environment.DEVELOPMENT
 
     # --- Database (TODO(phase-later): consumed once db/engine.py is implemented) ---
-    database_url: str = "postgresql+psycopg://launch_intel:launch_intel@localhost:5432/launch_intel"
+    database_url: str = "postgresql+psycopg://launch_intel_ro:<strong-password>@localhost:5432/launch_intel"
+
 
     # --- Redis / Celery (TODO(phase-later)) ---
     redis_url: str = "redis://localhost:6379/0"
