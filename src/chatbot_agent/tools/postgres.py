@@ -15,3 +15,5 @@ def query_database(query: str) -> str:
       return db.run(query)
     except Exception as e:
      return f"Database error: {e}"
+   
+    
