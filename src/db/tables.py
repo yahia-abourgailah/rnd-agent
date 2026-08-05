@@ -14,13 +14,13 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # Without none_as_null, SQLAlchemy writes Python None into a JSONB column as
 # JSON `null` rather than SQL NULL. That makes `raw IS NULL` never match, and it
 # defeats the COALESCE in the entity upsert, which can then blank a stored
 # payload with an incoming "no opinion".
 _Json = JSONB(none_as_null=True)
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
