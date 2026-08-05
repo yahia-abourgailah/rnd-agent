@@ -11,8 +11,9 @@ Endpoints (undocumented, public):
     /v1/search/compounds    -> Project     (paginated, has total, ~1830)
     /v1/search/properties   -> Unit        (per-compound, has total)
 
-Every fetch fails safe: if a payload's shape changes, mapping skips the record
-rather than crashing the whole backfill.
+Mapping fails safe: if a payload's shape changes, a record is skipped rather
+than crashing the whole backfill. Fetching the launch id set is the deliberate
+exception — see fetch_launch_compound_ids.
 """
 
 import json
@@ -30,13 +31,7 @@ from models import (
     delivery_year,
     normalize_property_types,
 )
-from watch.adapters.nawy import (
-    NawyAdapter,
-    _IDS_PER_REQUEST,
-    _MAX_PAGE_SIZE,
-    _MAX_PAGES,
-    _PROPERTIES_API,
-)
+from watch.adapters.nawy import NawyAdapter
 from watch.fetcher import Fetcher
 
 logger = logging.getLogger(__name__)
@@ -97,50 +92,31 @@ async def fetch_compounds(fetcher: Fetcher, limit: int | None = None) -> list[di
     return await _fetch_all_pages(fetcher, _COMPOUNDS_API, limit)
 
 
-async def fetch_units_for_compounds(
-    fetcher: Fetcher, compound_ids: list[int]
-) -> list[dict]:
-    """Fetch every unit record for the given compounds.
-
-    Mirrors NawyAdapter's chunking: compound ids ride in the query string and
-    the API 400s once the URL grows too long, so ask about a handful at a time
-    and paginate each chunk.
-    """
-    ids = [i for i in compound_ids if i is not None]
-    units: list[dict] = []
-    for start in range(0, len(ids), _IDS_PER_REQUEST):
-        chunk = ids[start : start + _IDS_PER_REQUEST]
-        collected = 0
-        for page_number in range(1, _MAX_PAGES + 1):
-            params = [("page", page_number), ("pageSize", _MAX_PAGE_SIZE)]
-            params += [("compoundsIds[]", i) for i in chunk]
-            response = await fetcher.fetch_json(_PROPERTIES_API, params=params)
-            try:
-                body = json.loads(response.content)
-            except json.JSONDecodeError:
-                break
-            batch = body.get("results") or []
-            units.extend(batch)
-            collected += len(batch)
-            if len(batch) < _MAX_PAGE_SIZE or collected >= body.get("total", 0):
-                break
-    return units
-
-
 async def fetch_launch_compound_ids(fetcher: Fetcher) -> set[int]:
     """The compound ids currently featured on Nawy's new-launches page.
 
     Reuses the proven NawyAdapter parser rather than inventing a second way to
-    identify launches. Fails safe to an empty set (nothing flagged) if the page
-    shape changes.
+    identify launches.
+
+    Raises rather than returning an empty set on failure: every compound is
+    flagged against this set, so "nothing came back" would silently clear
+    is_launch on every project and quietly empty the launch reports.
     """
     try:
         page = await fetcher.fetch_rendered_html(_NEW_LAUNCHES_URL)
-    except Exception as exc:  # network/render failure shouldn't sink the backfill
-        logger.warning("Could not fetch new-launches page: %s", exc)
-        return set()
+    except Exception as exc:
+        raise RuntimeError(
+            "Could not fetch Nawy's new-launches page; refusing to backfill with "
+            "an empty launch set, which would clear is_launch on every project."
+        ) from exc
     records = NawyAdapter.extract_launch_records(page.content)
-    return {r["compound_id"] for r in records if r.get("compound_id") is not None}
+    launch_ids = {r["compound_id"] for r in records if r.get("compound_id") is not None}
+    if not launch_ids:
+        raise RuntimeError(
+            "Nawy's new-launches page yielded no compound ids — its markup has "
+            "likely changed. Refusing to clear is_launch on every project."
+        )
+    return launch_ids
 
 
 # --------------------------------------------------------------------------- #

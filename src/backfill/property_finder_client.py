@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 SOURCE = "property_finder"
 
 _LISTING_URL = "https://www.propertyfinder.eg/en/new-projects"
-_NEXT_DATA_RE = re.compile(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.S)
+_NEXT_DATA_RE = re.compile(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.DOTALL)
 _MAX_PAGES = 80  # safety stop; the feed reports ~56 pages
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 
@@ -97,6 +97,35 @@ async def fetch_projects(fetcher: Fetcher, limit: int | None = None) -> list[dic
 # --------------------------------------------------------------------------- #
 # Mapping (pure — unit-testable without network)
 # --------------------------------------------------------------------------- #
+#: constructionPhase values that mean the project is still coming to market.
+_LAUNCH_PHASES = {"pre_launch", "launch", "under_construction", "off_plan"}
+
+
+def _is_launch(raw: dict) -> bool:
+    """Whether this project still counts as a launch.
+
+    The feed is called "new-projects" but carries completed developments too —
+    Mountain View Hyde Park sits there with constructionPhase "completed" and a
+    2023 delivery date. Flagging the whole feed as launches inflated every
+    launch count with projects that came to market years ago.
+    """
+    phase = (raw.get("constructionPhase") or "").strip().lower()
+    if phase:
+        return phase in _LAUNCH_PHASES
+    return raw.get("salesPhase") is not None
+
+
+def _slug_from_share_url(share_url: str | None) -> str | None:
+    """The trailing slug of a share URL, matching what other sources store.
+
+    shareUrl is a path ("/en/new-projects/palm-hills/palm-hills-phase-5"); the
+    slug column holds a slug everywhere else, so store the last segment.
+    """
+    if not share_url:
+        return None
+    return share_url.rstrip("/").rsplit("/", 1)[-1] or None
+
+
 def map_project(raw: dict) -> Project | None:
     if not raw.get("id") or not raw.get("title"):
         return None
@@ -111,14 +140,13 @@ def map_project(raw: dict) -> Project | None:
         source=SOURCE,
         source_id=str(raw["id"]),
         name=raw["title"],
-        slug=raw.get("shareUrl"),
+        slug=_slug_from_share_url(raw.get("shareUrl")),
         developer_source_id=str(developer["id"]) if developer.get("id") else None,
         area_source_id=_slug(district) if district else None,
         min_price=float(price) if price else None,
         currency="EGP",  # Property Finder Egypt prices; no currency field in payload
         property_types=normalize_property_types(raw.get("propertyTypes") or []),
-        # Everything on the new-projects feed is a new/off-plan development.
-        is_launch=True,
+        is_launch=_is_launch(raw),
         delivery_date=delivery_year(delivery),
         image_url=images[0] if images else None,
         description=location.get("fullName"),

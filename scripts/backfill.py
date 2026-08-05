@@ -16,15 +16,16 @@ import argparse
 import asyncio
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from backfill import nawy_client as nc  # noqa: E402
-from backfill import property_finder_client as pf  # noqa: E402
-from db import repository as repo  # noqa: E402
-from watch.fetcher import Fetcher  # noqa: E402
+from backfill import nawy_client as nc
+from backfill import property_finder_client as pf
+from db import repository as repo
+from watch.adapters.nawy import fetch_units_for_compounds
+from watch.fetcher import Fetcher
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("backfill")
@@ -78,13 +79,13 @@ async def run_nawy(units_scope: str, limit: int | None) -> None:
             target_ids = [cid for cid in target_ids if cid in loaded]
     logger.info("fetching units for %d compounds (scope=%s)", len(target_ids), units_scope)
 
-    unit_raw = await nc.fetch_units_for_compounds(fetcher, target_ids)
+    unit_raw = await fetch_units_for_compounds(fetcher, target_ids)
     units = [u for u in (nc.map_unit(r) for r in unit_raw) if u]
     n_units = repo.upsert_units(units, project_map)
     logger.info("upserted %d units", n_units)
 
     # 6. Availability snapshot, computed from the units just loaded.
-    snapshots = nc.compute_availability(units, datetime.now(timezone.utc))
+    snapshots = nc.compute_availability(units, datetime.now(UTC))
     n_avail = repo.save_availability(snapshots, project_map)
     logger.info("wrote %d availability snapshots", n_avail)
 

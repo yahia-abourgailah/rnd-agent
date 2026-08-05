@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from collections import defaultdict
 
@@ -16,7 +17,9 @@ from watch.change_detector import hash_content
 # PRICE) with nothing marking where one project ends and the next begins, and
 # the model routinely attributed a project's zone to its neighbour. The JSON
 # has no such ambiguity.
-_NEXT_DATA_RE = re.compile(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.S)
+logger = logging.getLogger(__name__)
+
+_NEXT_DATA_RE = re.compile(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.DOTALL)
 
 #: Nawy's field name -> our Launch field name. Renaming here rather than
 #: relying on the model to infer the mapping: given "areaName" it left `zone`
@@ -34,15 +37,50 @@ _FIELD_MAP = {
 # those live on individual unit records, which the site loads from this public
 # JSON API. One query can cover many compounds at once, so enrichment costs a
 # handful of requests rather than one per launch.
-_PROPERTIES_API = "https://listing-api.nawy.com/v1/search/properties"
-_MAX_PAGE_SIZE = 50  # the API rejects anything larger
-_MAX_PAGES = 40  # safety stop so a pagination bug can't crawl forever
+PROPERTIES_API = "https://listing-api.nawy.com/v1/search/properties"
+MAX_PAGE_SIZE = 50  # the API rejects anything larger
+MAX_PAGES = 40  # safety stop so a pagination bug can't crawl forever
 # Compound ids go in the query string, and the API 400s once the URL grows too
 # long (20 ids pass, 24 fail), so ask about a limited number at a time.
-_IDS_PER_REQUEST = 12
+IDS_PER_REQUEST = 12
 
 #: Internal bookkeeping keys, stripped before the record reaches the LLM.
 _INTERNAL_KEYS = ("compound_id",)
+
+
+async def fetch_units_for_compounds(fetcher, compound_ids: list[int]) -> list[dict]:
+    """Every unit record Nawy lists for the given compounds.
+
+    Owns the API's two constraints so callers don't reimplement them: compound
+    ids ride in the query string and the API 400s once the URL grows too long,
+    so ids are chunked; each chunk is then paginated to exhaustion.
+    """
+    ids = [i for i in compound_ids if i is not None]
+    units: list[dict] = []
+    for start in range(0, len(ids), IDS_PER_REQUEST):
+        chunk = ids[start : start + IDS_PER_REQUEST]
+        collected = 0
+        for page_number in range(1, MAX_PAGES + 1):
+            params = [("page", page_number), ("pageSize", MAX_PAGE_SIZE)]
+            params += [("compoundsIds[]", i) for i in chunk]
+            response = await fetcher.fetch_json(PROPERTIES_API, params=params)
+            try:
+                body = json.loads(response.content)
+            except json.JSONDecodeError:
+                logger.warning("Non-JSON unit payload for compounds %s page %s", chunk, page_number)
+                break
+            batch = body.get("results") or []
+            units.extend(batch)
+            collected += len(batch)
+            if len(batch) < MAX_PAGE_SIZE or collected >= body.get("total", 0):
+                break
+        else:
+            logger.warning(
+                "Hit the %s-page cap for compounds %s; unit data may be truncated",
+                MAX_PAGES,
+                chunk,
+            )
+    return units
 
 
 class NawyAdapter(BaseAdapter):
@@ -116,28 +154,7 @@ class NawyAdapter(BaseAdapter):
 
     async def _fetch_unit_facts(self, compound_ids: list[int]) -> dict[int, dict]:
         """Aggregate unit-level facts per compound from Nawy's listing API."""
-        ids = [i for i in compound_ids if i is not None]
-        if not ids:
-            return {}
-
-        units: list[dict] = []
-        for start in range(0, len(ids), _IDS_PER_REQUEST):
-            chunk = ids[start : start + _IDS_PER_REQUEST]
-            collected = 0
-            for page_number in range(1, _MAX_PAGES + 1):
-                params = [("page", page_number), ("pageSize", _MAX_PAGE_SIZE)]
-                params += [("compoundsIds[]", i) for i in chunk]
-                response = await self.fetcher.fetch_json(_PROPERTIES_API, params=params)
-                try:
-                    body = json.loads(response.content)
-                except json.JSONDecodeError:
-                    break
-                batch = body.get("results") or []
-                units.extend(batch)
-                collected += len(batch)
-                if len(batch) < _MAX_PAGE_SIZE or collected >= body.get("total", 0):
-                    break
-
+        units = await fetch_units_for_compounds(self.fetcher, compound_ids)
         return self.aggregate_unit_facts(units)
 
     @staticmethod

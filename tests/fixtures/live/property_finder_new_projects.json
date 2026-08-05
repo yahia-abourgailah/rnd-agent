@@ -1,0 +1,514 @@
+{
+ "meta": {
+  "count": {
+   "developer": 1337,
+   "resale": 11,
+   "total": 1348
+  },
+  "pagination": {
+   "page": 1,
+   "total": 57
+  }
+ },
+ "projects": [
+  {
+   "amenities": [
+    {
+     "id": "fa405b95-6933-45e9-828e-abbe4f1a120f",
+     "name": "Security"
+    },
+    {
+     "id": "dab92e88-b27c-4a6f-b4fd-b9b8fbb8e916",
+     "name": "Swimming Pool"
+    },
+    {
+     "id": "fca55018-33f9-4493-a88c-eff88a17436d",
+     "name": "Kids Area"
+    },
+    {
+     "id": "6ecd15ab-93b8-482b-9dad-902f5b57fbd4",
+     "name": "Hotel and Spa Facilities"
+    },
+    {
+     "id": "57182006-e477-43b0-b515-8be769e93c9a",
+     "name": "Gymnasium"
+    },
+    {
+     "id": "ed8d5db0-7237-44ba-b699-694ba6c24e28",
+     "name": "Golf Club and Clubhouse"
+    },
+    {
+     "id": "b370035c-e8c6-4a42-8cc6-508c9d8e6bd2",
+     "name": "CCTV Security"
+    },
+    {
+     "id": "b3c59407-6475-4282-8daf-1858564358d7",
+     "name": "Cafe and Restaurants"
+    },
+    {
+     "id": "1e9d2679-ddf9-4aa3-9034-934ee66060b3",
+     "name": "Landscaped Parks"
+    },
+    {
+     "id": "ad4c7ef3-ba7b-47f6-82b4-f2d6efe4fa11",
+     "name": "Landscaped Gardens"
+    }
+   ],
+   "bedrooms": [
+    "3",
+    "4",
+    "5",
+    "6"
+   ],
+   "campaignType": "project",
+   "constructionPhase": "under_construction",
+   "constructionProgress": null,
+   "contactOptions": [
+    {
+     "link": "https://wa.me/20221257340?text=Hello%2C+I+am+interested+in+learning+more+about+Palm+Hills+Phase+5+which+I+found+on+Property+Finder.+Project+link%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fen%2Fnew-projects%2Fpalm-hills%2Fpalm-hills-phase-5%0A",
+     "type": "whatsapp"
+    }
+   ],
+   "deliveryDate": "2027-12-31T10:05:04.112Z",
+   "developer": {
+    "id": "03dbb99a-4102-4ea3-b74f-106db97d2849",
+    "logoUrl": "https://new-projects-media.propertyfinder.com/developer/03dbb99a-4102-4ea3-b74f-106db97d2849/logo/image/-J-2w03ua-Mob79__YDeh9xbloT-_G_I2J89x_UOYuE=/original.webp",
+    "name": "Palm Hills"
+   },
+   "downPaymentPercentage": 5,
+   "hotnessLevel": 79,
+   "id": "ad4143f8-9f64-45fe-b946-c21b3ed3091e",
+   "images": [
+    "https://new-projects-media.propertyfinder.com/project/ad4143f8-9f64-45fe-b946-c21b3ed3091e/gallery/image/1zq1VxNv4nhFCt1XCzKvPhK4iX01IPvDsLyGqMHM4Qs=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/ad4143f8-9f64-45fe-b946-c21b3ed3091e/gallery/image/JYK0uHKv3BwRSBNGzasyV5bIgL2VstmNSUyUGkZt4X4=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/ad4143f8-9f64-45fe-b946-c21b3ed3091e/gallery/image/87VbgkqilFs3U1-cRfym_I4nlunKuZ_SrNKGDyyNBGY=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/ad4143f8-9f64-45fe-b946-c21b3ed3091e/gallery/image/hSxmOvDzXg7dk73F5i_4QCaE83IimuwhPYL5uDVvVwA=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/ad4143f8-9f64-45fe-b946-c21b3ed3091e/gallery/image/uiD3gCaioo3iZJKsDUjLAmpkbwxPk0XDn5sA3HxnpCo=/medium.webp"
+   ],
+   "leadCta": null,
+   "location": {
+    "coordinates": {
+     "lat": 30.012272,
+     "lon": 31.579515,
+     "lng": 31.579515
+    },
+    "fullName": "Cairo,New Cairo City,The 5th Settlement,5th Settlement Compounds,Palm Hills New Cairo",
+    "id": 2780
+   },
+   "minResalePrice": null,
+   "paymentPlans": [
+    "5"
+   ],
+   "priceRange": {
+    "max": 80250000,
+    "min": 40585000
+   },
+   "propertyTypes": [
+    "townhouse",
+    "villa"
+   ],
+   "salesPhase": null,
+   "salesStartDate": null,
+   "shareUrl": "/en/new-projects/palm-hills/palm-hills-phase-5",
+   "startingPrice": 40585000,
+   "stockAvailability": "available",
+   "title": "Palm Hills Phase 5",
+   "weightRanking": 100
+  },
+  {
+   "amenities": [
+    {
+     "id": "fa405b95-6933-45e9-828e-abbe4f1a120f",
+     "name": "Security"
+    },
+    {
+     "id": "dab92e88-b27c-4a6f-b4fd-b9b8fbb8e916",
+     "name": "Swimming Pool"
+    },
+    {
+     "id": "fca55018-33f9-4493-a88c-eff88a17436d",
+     "name": "Kids Area"
+    },
+    {
+     "id": "6ecd15ab-93b8-482b-9dad-902f5b57fbd4",
+     "name": "Hotel and Spa Facilities"
+    },
+    {
+     "id": "57182006-e477-43b0-b515-8be769e93c9a",
+     "name": "Gymnasium"
+    },
+    {
+     "id": "ed8d5db0-7237-44ba-b699-694ba6c24e28",
+     "name": "Golf Club and Clubhouse"
+    },
+    {
+     "id": "b370035c-e8c6-4a42-8cc6-508c9d8e6bd2",
+     "name": "CCTV Security"
+    },
+    {
+     "id": "b3c59407-6475-4282-8daf-1858564358d7",
+     "name": "Cafe and Restaurants"
+    },
+    {
+     "id": "1e9d2679-ddf9-4aa3-9034-934ee66060b3",
+     "name": "Landscaped Parks"
+    },
+    {
+     "id": "ad4c7ef3-ba7b-47f6-82b4-f2d6efe4fa11",
+     "name": "Landscaped Gardens"
+    }
+   ],
+   "bedrooms": [],
+   "campaignType": "project",
+   "constructionPhase": "under_construction",
+   "constructionProgress": null,
+   "contactOptions": [
+    {
+     "link": "https://wa.me/20221257340?text=Hello%2C+I+am+interested+in+learning+more+about+Palm+Hills+Phase+4+which+I+found+on+Property+Finder.+Project+link%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fen%2Fnew-projects%2Fpalm-hills%2Fpalm-hills-phase-4%0A",
+     "type": "whatsapp"
+    }
+   ],
+   "deliveryDate": "2027-12-31T18:15:00Z",
+   "developer": {
+    "id": "03dbb99a-4102-4ea3-b74f-106db97d2849",
+    "logoUrl": "https://new-projects-media.propertyfinder.com/developer/03dbb99a-4102-4ea3-b74f-106db97d2849/logo/image/-J-2w03ua-Mob79__YDeh9xbloT-_G_I2J89x_UOYuE=/original.webp",
+    "name": "Palm Hills"
+   },
+   "downPaymentPercentage": 5,
+   "hotnessLevel": 79,
+   "id": "4b58c36e-d7e1-4a67-a323-6345c7cf0852",
+   "images": [
+    "https://new-projects-media.propertyfinder.com/project/4b58c36e-d7e1-4a67-a323-6345c7cf0852/gallery/image/4MaHNNMDKI2nBdpwn3uoHTNbsPJBqgmsXux0CS0KHes=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/4b58c36e-d7e1-4a67-a323-6345c7cf0852/gallery/image/Bphvvl4D8eCDnrvAHs3bUYN6OA9MkIJB0ffGtpp0ZtU=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/4b58c36e-d7e1-4a67-a323-6345c7cf0852/gallery/image/ROfJ-kAaQwvvTiY8qpzxqr0S-pINOmNbFv8vA5CX820=/medium.webp"
+   ],
+   "leadCta": null,
+   "location": {
+    "coordinates": {
+     "lat": 30.012272,
+     "lon": 31.579515,
+     "lng": 31.579515
+    },
+    "fullName": "Cairo,New Cairo City,The 5th Settlement,5th Settlement Compounds,Palm Hills New Cairo",
+    "id": 2780
+   },
+   "minResalePrice": null,
+   "paymentPlans": [
+    "5"
+   ],
+   "priceRange": null,
+   "propertyTypes": [],
+   "salesPhase": null,
+   "salesStartDate": null,
+   "shareUrl": "/en/new-projects/palm-hills/palm-hills-phase-4",
+   "startingPrice": 26999000,
+   "stockAvailability": "available",
+   "title": "Palm Hills Phase 4",
+   "weightRanking": 100
+  },
+  {
+   "amenities": [
+    {
+     "id": "57182006-e477-43b0-b515-8be769e93c9a",
+     "name": "Gymnasium"
+    },
+    {
+     "id": "ed8d5db0-7237-44ba-b699-694ba6c24e28",
+     "name": "Golf Club and Clubhouse"
+    },
+    {
+     "id": "0661e584-e5b6-4bec-8f95-71fb0709df39",
+     "name": "Cycle track"
+    },
+    {
+     "id": "b370035c-e8c6-4a42-8cc6-508c9d8e6bd2",
+     "name": "CCTV Security"
+    },
+    {
+     "id": "ad4c7ef3-ba7b-47f6-82b4-f2d6efe4fa11",
+     "name": "Landscaped Gardens"
+    },
+    {
+     "id": "9b8fd993-144d-433a-aeb5-62dd9eed39cd",
+     "name": "Indoor Swimming Pool"
+    }
+   ],
+   "bedrooms": [
+    "2",
+    "3"
+   ],
+   "campaignType": "project",
+   "constructionPhase": "completed",
+   "constructionProgress": null,
+   "contactOptions": [
+    {
+     "link": "https://wa.me/20221257340?text=Hello%2C+I+am+interested+in+learning+more+about+Mountain+View+Hyde+Park+which+I+found+on+Property+Finder.+Project+link%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fen%2Fnew-projects%2Fmountain-view%2Fmountain-view-hyde-park%0A",
+     "type": "whatsapp"
+    }
+   ],
+   "deliveryDate": "2023-02-27T22:00:00Z",
+   "developer": {
+    "id": "8b5d48ad-3d36-4694-b079-6a8807d6fcc9",
+    "logoUrl": "https://new-projects-media.propertyfinder.com/developer/8b5d48ad-3d36-4694-b079-6a8807d6fcc9/logo/image/0RtGgT3lMUGYjrEgcjcwiwgVCMUukkJTU31oXRGhsRs=/original.webp",
+    "name": "Mountain View"
+   },
+   "downPaymentPercentage": 15,
+   "hotnessLevel": 78,
+   "id": "c906fe6e-ad55-49af-af64-6666bb362260",
+   "images": [
+    "https://new-projects-media.propertyfinder.com/project/c906fe6e-ad55-49af-af64-6666bb362260/gallery/image/xEyY-PgOPMnk94i-NRNHOKt4vLIckQYOCRQaCR0ba5s=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/c906fe6e-ad55-49af-af64-6666bb362260/gallery/image/OG7At9tFZvwdi-4dJCQq9S-Mhodnr9oeY6qvGYYW-24=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/c906fe6e-ad55-49af-af64-6666bb362260/gallery/image/0AcxoCHSEJ9CffjhqKzUNb_Jntse6xZjD6eZqd67D1A=/medium.webp"
+   ],
+   "leadCta": null,
+   "location": {
+    "coordinates": {
+     "lat": 29.98755552936,
+     "lon": 31.55556899322,
+     "lng": 31.55556899322
+    },
+    "fullName": "Cairo,New Cairo City,The 5th Settlement,5th Settlement Compounds,Mountain View Hyde Park",
+    "id": 2763
+   },
+   "minResalePrice": null,
+   "paymentPlans": [
+    "15"
+   ],
+   "priceRange": {
+    "max": 22921714,
+    "min": 22921714
+   },
+   "propertyTypes": [
+    "townhouse",
+    "apartment",
+    "villa",
+    "penthouse"
+   ],
+   "salesPhase": null,
+   "salesStartDate": null,
+   "shareUrl": "/en/new-projects/mountain-view/mountain-view-hyde-park",
+   "startingPrice": 22921714,
+   "stockAvailability": "available",
+   "title": "Mountain View Hyde Park",
+   "weightRanking": 100
+  },
+  {
+   "amenities": [],
+   "bedrooms": [
+    "3",
+    "4",
+    "5"
+   ],
+   "campaignType": "project",
+   "constructionPhase": "under_construction",
+   "constructionProgress": null,
+   "contactOptions": [
+    {
+     "link": "https://wa.me/20221257340?text=Hello%2C+I+am+interested+in+learning+more+about+The+Scarlet+In+Swanlake+which+I+found+on+Property+Finder.+Project+link%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fen%2Fnew-projects%2Fhassan-allam-holding%2Fthe-scarlet-in-swanlake%0A",
+     "type": "whatsapp"
+    }
+   ],
+   "deliveryDate": "2026-12-30T22:00:00Z",
+   "developer": {
+    "id": "4134de76-e10b-4f95-a17c-20dc364f863e",
+    "logoUrl": "https://new-projects-media.propertyfinder.com/developer/4134de76-e10b-4f95-a17c-20dc364f863e/logo/image/E2BtCRPPDGFCNY_OApdE75c3Y06TqpB1fopgCofXCzE=/original.webp",
+    "name": "Hassan Allam Holding"
+   },
+   "downPaymentPercentage": 5,
+   "hotnessLevel": 78,
+   "id": "319f5191-b2f2-4530-8720-25343969b6bc",
+   "images": [
+    "https://new-projects-media.propertyfinder.com/project/319f5191-b2f2-4530-8720-25343969b6bc/gallery/image/LbMxFbrvqHmjWdgCH_jTxOCRYbMlvsf6xbv1Dh9ppIs=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/319f5191-b2f2-4530-8720-25343969b6bc/gallery/image/2x-fH_OUmBOvc8aCOlweMeD1U8DcIy5Cd-bJ2zx_Ex4=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/319f5191-b2f2-4530-8720-25343969b6bc/gallery/image/MMSdcbMKzDKQS35TWYmMPb3aEpzCVKW-oz4-A7Bo2wk=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/319f5191-b2f2-4530-8720-25343969b6bc/gallery/image/GjuMveEWO3wR07CU8ot2WL_ZO8Cq3d9senvAsfK4pPU=/medium.webp"
+   ],
+   "leadCta": null,
+   "location": {
+    "coordinates": {
+     "lat": 30.073923,
+     "lon": 31.4655322,
+     "lng": 31.4655322
+    },
+    "fullName": "Cairo,New Cairo City,The 5th Settlement,5th Settlement Compounds,Swan Lake Residence",
+    "id": 41263
+   },
+   "minResalePrice": null,
+   "paymentPlans": [
+    "5"
+   ],
+   "priceRange": {
+    "max": 55000000,
+    "min": 55000000
+   },
+   "propertyTypes": [
+    "villa",
+    "townhouse"
+   ],
+   "salesPhase": null,
+   "salesStartDate": null,
+   "shareUrl": "/en/new-projects/hassan-allam-holding/the-scarlet-in-swanlake",
+   "startingPrice": 55000000,
+   "stockAvailability": "available",
+   "title": "The Scarlet In Swanlake",
+   "weightRanking": 100
+  },
+  {
+   "amenities": [
+    {
+     "id": "1447370b-1906-40b4-9684-528c1c7d4c99",
+     "name": "Shopping area"
+    },
+    {
+     "id": "6ecd15ab-93b8-482b-9dad-902f5b57fbd4",
+     "name": "Hotel and Spa Facilities"
+    },
+    {
+     "id": "8eafd980-4eed-4f22-bbf0-9c1b40f30e6e",
+     "name": "Health Club"
+    },
+    {
+     "id": "b370035c-e8c6-4a42-8cc6-508c9d8e6bd2",
+     "name": "CCTV Security"
+    },
+    {
+     "id": "14816288-6a00-40dc-b809-d31bc9aed934",
+     "name": "On-Site Maintenance"
+    },
+    {
+     "id": "37a20f54-7040-440d-9ff7-28e4d5b2be86",
+     "name": "Laundry and Dry Cleaning Services"
+    },
+    {
+     "id": "5c6a5637-5b4f-4edc-9f47-d753dea41898",
+     "name": "Well-being and Fitness"
+    }
+   ],
+   "bedrooms": [],
+   "campaignType": "project",
+   "constructionPhase": "completed",
+   "constructionProgress": null,
+   "contactOptions": [
+    {
+     "link": "https://wa.me/20221257340?text=Hello%2C+I+am+interested+in+learning+more+about+The+Iris+in+SwanLake+Residence+which+I+found+on+Property+Finder.+Project+link%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fen%2Fnew-projects%2Fhassan-allam-holding%2Fthe-iris-in-swanlake-residence%0A",
+     "type": "whatsapp"
+    }
+   ],
+   "deliveryDate": "2024-12-30T22:00:00Z",
+   "developer": {
+    "id": "4134de76-e10b-4f95-a17c-20dc364f863e",
+    "logoUrl": "https://new-projects-media.propertyfinder.com/developer/4134de76-e10b-4f95-a17c-20dc364f863e/logo/image/E2BtCRPPDGFCNY_OApdE75c3Y06TqpB1fopgCofXCzE=/original.webp",
+    "name": "Hassan Allam Holding"
+   },
+   "downPaymentPercentage": null,
+   "hotnessLevel": 79,
+   "id": "00fea4e0-ebfb-4032-810b-10821fc94f7e",
+   "images": [
+    "https://new-projects-media.propertyfinder.com/project/00fea4e0-ebfb-4032-810b-10821fc94f7e/gallery/image/wqNff52pDFbxIyMFw_MW0Bw52wDlhHAQm1U047jiixw=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/00fea4e0-ebfb-4032-810b-10821fc94f7e/gallery/image/cyJ8Fv-AM2xhgUYSKoezzDvcIUffhk3ZP9TRkYi35ZM=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/00fea4e0-ebfb-4032-810b-10821fc94f7e/gallery/image/Uh5QZrHVBZaUolujT58DC48zK4Hh47c4rdXkOMC3qLA=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/00fea4e0-ebfb-4032-810b-10821fc94f7e/gallery/image/WptCU4qoAeFto38Q5E8nL0Bn6g1-DG-Cs4_nGt8dWE8=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/00fea4e0-ebfb-4032-810b-10821fc94f7e/gallery/image/ePDFaepQ4aw0-uKDonQsLicwIXWIVxJrRCzGAjKshE8=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/00fea4e0-ebfb-4032-810b-10821fc94f7e/gallery/image/SXRDVm6rV1eZ_DrjEpW20wCBYaah10Gb-u7_kEiGnIU=/medium.webp"
+   ],
+   "leadCta": null,
+   "location": {
+    "coordinates": {
+     "lat": 30.04074712,
+     "lon": 31.47093773,
+     "lng": 31.47093773
+    },
+    "fullName": "Cairo,New Cairo City",
+    "id": 2255
+   },
+   "minResalePrice": null,
+   "paymentPlans": [],
+   "priceRange": null,
+   "propertyTypes": [],
+   "salesPhase": null,
+   "salesStartDate": null,
+   "shareUrl": "/en/new-projects/hassan-allam-holding/the-iris-in-swanlake-residence",
+   "startingPrice": 19100000,
+   "stockAvailability": "available",
+   "title": "The Iris in SwanLake Residence",
+   "weightRanking": 100
+  },
+  {
+   "amenities": [
+    {
+     "id": "6ecd15ab-93b8-482b-9dad-902f5b57fbd4",
+     "name": "Hotel and Spa Facilities"
+    },
+    {
+     "id": "ed8d5db0-7237-44ba-b699-694ba6c24e28",
+     "name": "Golf Club and Clubhouse"
+    }
+   ],
+   "bedrooms": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+   ],
+   "campaignType": "project",
+   "constructionPhase": "under_construction",
+   "constructionProgress": null,
+   "contactOptions": [
+    {
+     "link": "https://wa.me/20221257340?text=Hello%2C+I+am+interested+in+learning+more+about+Salt+which+I+found+on+Property+Finder.+Project+link%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fen%2Fnew-projects%2Ftatweer-misr%2Fsalt%0A",
+     "type": "whatsapp"
+    }
+   ],
+   "deliveryDate": "2027-12-31T10:41:58.915Z",
+   "developer": {
+    "id": "9fe30b4b-9b42-4e4d-9a6c-cfd01ccfa5a0",
+    "logoUrl": "https://new-projects-media.propertyfinder.com/developer/9fe30b4b-9b42-4e4d-9a6c-cfd01ccfa5a0/logo/image/bh5XMVbJEfJr2gO6aAs-Em-ZwP1R9hhRZ3ncPL_xBxo=/original.webp",
+    "name": "Tatweer Misr"
+   },
+   "downPaymentPercentage": 10,
+   "hotnessLevel": 70,
+   "id": "51ece1b0-f3de-48e9-934c-9ab5f69231e7",
+   "images": [
+    "https://new-projects-media.propertyfinder.com/project/51ece1b0-f3de-48e9-934c-9ab5f69231e7/gallery/image/lB0EG5LdXCl8avbqIJo4NZrIWPgqlQOuL-Md9hl8IRk=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/51ece1b0-f3de-48e9-934c-9ab5f69231e7/gallery/image/TTwxZWg3zyuZ3RieIrDfDXsR7EuDvshitOB3hB7UaR0=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/51ece1b0-f3de-48e9-934c-9ab5f69231e7/gallery/image/eNubxbgR0oP9UxrWNIkv6srI_yLivZjC-mSs1CZK3dg=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/51ece1b0-f3de-48e9-934c-9ab5f69231e7/gallery/image/Mfrk1SzxWslCGbmCm_35KsEDMHYoYIdZWQGud5F_6Go=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/51ece1b0-f3de-48e9-934c-9ab5f69231e7/gallery/image/3PR65iYcVdix6cBHVdbkJdfEvi3C0la11SSpC4sj_Ms=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/51ece1b0-f3de-48e9-934c-9ab5f69231e7/gallery/image/yX1AclwtXo86wadR_wUd8jD2IeklXq-SXmrYjxfL3uM=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/51ece1b0-f3de-48e9-934c-9ab5f69231e7/gallery/image/vCAz4G3lKWtIjYsshOORYN4qjaP79KppphNkYZRRC_U=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/51ece1b0-f3de-48e9-934c-9ab5f69231e7/gallery/image/FkIvi3qVVzz_1vsjnubk34etNabUOjwJGAnGW_U46g0=/medium.webp",
+    "https://new-projects-media.propertyfinder.com/project/51ece1b0-f3de-48e9-934c-9ab5f69231e7/gallery/image/4RF2jlESIJdnZpZFfriK2bCy-mbJSdoC5esM6OKyjFY=/medium.webp"
+   ],
+   "leadCta": null,
+   "location": {
+    "coordinates": {
+     "lat": 31.081553,
+     "lon": 28.120782,
+     "lng": 28.120782
+    },
+    "fullName": "North Coast,Ras Al Hekma,Salt",
+    "id": 41463
+   },
+   "minResalePrice": null,
+   "paymentPlans": [
+    "10"
+   ],
+   "priceRange": {
+    "max": 90983700,
+    "min": 8917560
+   },
+   "propertyTypes": [
+    "villa",
+    "townhouse"
+   ],
+   "salesPhase": null,
+   "salesStartDate": null,
+   "shareUrl": "/en/new-projects/tatweer-misr/salt",
+   "startingPrice": 8917560,
+   "stockAvailability": "available",
+   "title": "Salt",
+   "weightRanking": 100
+  }
+ ]
+}
