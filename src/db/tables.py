@@ -14,6 +14,12 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+
+# Without none_as_null, SQLAlchemy writes Python None into a JSONB column as
+# JSON `null` rather than SQL NULL. That makes `raw IS NULL` never match, and it
+# defeats the COALESCE in the entity upsert, which can then blank a stored
+# payload with an incoming "no opinion".
+_Json = JSONB(none_as_null=True)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -75,7 +81,7 @@ class LaunchRow(Base):
     location_raw: Mapped[str | None] = mapped_column(Text)
     zone: Mapped[str | None] = mapped_column(String(255))
     property_types: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
-    unit_sizes: Mapped[dict | None] = mapped_column(JSONB)
+    unit_sizes: Mapped[dict | None] = mapped_column(_Json)
     price_from: Mapped[float | None] = mapped_column(Float)
     price_per_sqm: Mapped[float | None] = mapped_column(Float)
     payment_plan: Mapped[str | None] = mapped_column(Text)
@@ -149,7 +155,7 @@ class Developer(Base):
     projects_count: Mapped[int | None] = mapped_column(Integer)
 
     # Full source payload, kept verbatim so we can re-derive fields later.
-    raw: Mapped[dict | None] = mapped_column(JSONB)
+    raw: Mapped[dict | None] = mapped_column(_Json)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -177,7 +183,7 @@ class Area(Base):
     slug: Mapped[str | None] = mapped_column(String(255))
     city: Mapped[str | None] = mapped_column(String(255))
 
-    raw: Mapped[dict | None] = mapped_column(JSONB)
+    raw: Mapped[dict | None] = mapped_column(_Json)
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (UniqueConstraint("external_ref", name="uq_areas_ref"),)
@@ -210,7 +216,7 @@ class Project(Base):
     image_url: Mapped[str | None] = mapped_column(Text)
     description: Mapped[str | None] = mapped_column(Text)
 
-    raw: Mapped[dict | None] = mapped_column(JSONB)
+    raw: Mapped[dict | None] = mapped_column(_Json)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -248,7 +254,7 @@ class Unit(Base):
     ready_by: Mapped[str | None] = mapped_column(String(32))
     finishing: Mapped[str | None] = mapped_column(String(64))
 
-    raw: Mapped[dict | None] = mapped_column(JSONB)
+    raw: Mapped[dict | None] = mapped_column(_Json)
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (

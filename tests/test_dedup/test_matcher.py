@@ -70,3 +70,30 @@ def test_unrelated_names_are_left_alone():
     items = [{"id": 1, "name": "Zed East"}, {"id": 2, "name": "Zed West"}]
 
     assert cluster_entities(items) == []
+
+
+def test_one_swapped_word_is_not_a_duplicate():
+    """'Elan Villas Cairo Gate' and 'Eden Villas Cairo Gate' are different Emaar
+    projects that scored 91 overall, because only one of four words differs."""
+    items = [
+        {"id": 1, "name": "ELAN Villas Cairo Gate"},
+        {"id": 2, "name": "Eden Villas Cairo Gate"},
+    ]
+
+    assert cluster_entities(items) == []
+
+
+def test_a_near_identical_word_still_merges():
+    """The guard must not block real variants: tower/towers, masqad/maqsad."""
+    assert cluster_entities(
+        [{"id": 1, "name": "Modon Mega Tower"}, {"id": 2, "name": "Modon Mega Towers"}]
+    ) == [[1, 2]]
+    assert cluster_entities(
+        [{"id": 1, "name": "Al Masqad Residences"}, {"id": 2, "name": "Al Maqsad Residences"}]
+    ) == [[1, 2]]
+
+
+def test_compass_point_variants_stay_apart():
+    items = [{"id": 1, "name": "Swan Lake West"}, {"id": 2, "name": "Swan Lake East"}]
+
+    assert cluster_entities(items) == []

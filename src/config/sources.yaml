@@ -2,7 +2,7 @@
 # Each entry is loaded into a models.source.SourceConfig.
 #
 # adapter_name must match a class registered in
-# src/launch_intel/watch/adapters/__init__.py
+# src/watch/adapters/__init__.py
 
 sources:
   - name: nawy
@@ -11,7 +11,10 @@ sources:
     urls:
       - "https://www.nawy.com/new-launches"
     crawl_frequency: "30m"
-    adapter_name: generic_developer_site
+    # The dedicated Nawy adapter reads the page's embedded JSON. The generic
+    # HTML adapter flattens the page to text, which misattributed each
+    # project's zone to its neighbour.
+    adapter_name: nawy
 
   # TODO(phase-later): aggregator adapters are stubbed under
   # watch/adapters/{nawy,property_finder,sodic,palm_hills}.py — uncomment and

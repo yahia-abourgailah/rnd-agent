@@ -14,7 +14,25 @@ from rapidfuzz import fuzz
 from dedup.normalize import normalize_name
 
 DEFAULT_THRESHOLD = 90  # token_sort_ratio; strict enough to avoid false merges
+# Two names of equal length differing in one word score high overall, because
+# most of the name matches. "Elan Villas Cairo Gate" and "Eden Villas Cairo
+# Gate" are different Emaar projects but score 91. The word that actually
+# differs is the whole signal, so it is scored on its own: elan/eden is 50,
+# while genuine variants — tower/towers 91, masqad/maqsad 83 — sit well above.
+_MIN_DIFFERING_TOKEN_RATIO = 80
 _NUM_RE = re.compile(r"\d+")
+
+
+def _differing_tokens_agree(name_a: str, name_b: str) -> bool:
+    """Whether names of equal word count differ only in near-identical words."""
+    tokens_a, tokens_b = name_a.split(), name_b.split()
+    if len(tokens_a) != len(tokens_b):
+        return True
+    return all(
+        fuzz.ratio(a, b) >= _MIN_DIFFERING_TOKEN_RATIO
+        for a, b in zip(tokens_a, tokens_b, strict=True)
+        if a != b
+    )
 
 
 def _numbers(name: str) -> list[str]:
@@ -88,6 +106,8 @@ def cluster_entities(
                 # Numbered names must agree on their numbers — "La Vista 1" and
                 # "La Vista 2" are distinct projects, not a fuzzy duplicate.
                 if _numbers(name_b) != nums_a:
+                    continue
+                if not _differing_tokens_agree(name_a, name_b):
                     continue
                 if fuzz.token_sort_ratio(name_a, name_b) >= threshold:
                     uf.union(id_a, id_b)
