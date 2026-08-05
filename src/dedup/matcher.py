@@ -8,6 +8,7 @@ both speeds things up and prevents cross-context false matches.
 
 import re
 from collections import defaultdict
+from collections.abc import Callable
 
 from rapidfuzz import fuzz
 
@@ -20,6 +21,11 @@ DEFAULT_THRESHOLD = 90  # token_sort_ratio; strict enough to avoid false merges
 # differs is the whole signal, so it is scored on its own: elan/eden is 50,
 # while genuine variants — tower/towers 91, masqad/maqsad 83 — sit well above.
 _MIN_DIFFERING_TOKEN_RATIO = 80
+# On a short name a single-character edit is a small distance but usually a
+# different place: "Maadi" (a Cairo district) and "Makadi" (a Red Sea resort)
+# score 91. Below this length only the exact-match pass may merge, which costs
+# nothing — every real short-name duplicate seen so far matches exactly.
+_MIN_FUZZY_NAME_CHARS = 9
 _NUM_RE = re.compile(r"\d+")
 
 
@@ -65,13 +71,14 @@ def cluster_entities(
     items: list[dict],
     threshold: int = DEFAULT_THRESHOLD,
     block_key: str | None = None,
+    normalizer: Callable[[str | None], str] = normalize_name,
 ) -> list[list]:
     """Return clusters (each a list of ≥2 ids) of rows judged the same entity.
 
     Rows whose normalised names are identical always merge. Beyond that, rows
     are fuzzy-compared (within the same `block_key` bucket, if given).
     """
-    norm = {it["id"]: normalize_name(it["name"]) for it in items}
+    norm = {it["id"]: normalizer(it["name"]) for it in items}
     uf = _UnionFind([it["id"] for it in items])
 
     blocks: dict[object, list[dict]] = defaultdict(list)
@@ -108,6 +115,8 @@ def cluster_entities(
                 if _numbers(name_b) != nums_a:
                     continue
                 if not _differing_tokens_agree(name_a, name_b):
+                    continue
+                if max(len(name_a), len(name_b)) < _MIN_FUZZY_NAME_CHARS:
                     continue
                 if fuzz.token_sort_ratio(name_a, name_b) >= threshold:
                     uf.union(id_a, id_b)

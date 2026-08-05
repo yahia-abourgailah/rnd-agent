@@ -33,6 +33,20 @@ _WRITE_KEYWORDS = re.compile(r"\b(insert|update|delete|merge)\b", re.IGNORECASE)
 # Column count across the whole public schema — generous, but bounded so a
 # runaway catalogue can't fill the model's context window.
 _SCHEMA_ROW_LIMIT = 2000
+# The row cap alone does not bound size: `raw` is a JSONB column holding a whole
+# source payload, so 100 of them would fill the model's 32k window in a single
+# tool result and leave no room to reason about it.
+_MAX_TOOL_OUTPUT_CHARS = 6000
+
+
+def _bounded(text: str) -> str:
+    if len(text) <= _MAX_TOOL_OUTPUT_CHARS:
+        return text
+    return (
+        text[:_MAX_TOOL_OUTPUT_CHARS]
+        + f"\n... truncated at {_MAX_TOOL_OUTPUT_CHARS} characters. "
+        "Select fewer columns, or aggregate in SQL instead of returning rows."
+    )
 
 
 class UnsafeQueryError(ValueError):
@@ -130,7 +144,7 @@ def query_database(query: str) -> str:
 
     if not rows:
         return "No rows returned."
-    return "\n".join(str(tuple(row)) for row in rows)
+    return _bounded("\n".join(str(tuple(row)) for row in rows))
 
 
 @tool
@@ -155,7 +169,9 @@ def describe_schema() -> str:
     tables: dict[str, list[str]] = {}
     for table_name, column_name, data_type in rows:
         tables.setdefault(table_name, []).append(f"{column_name} {data_type}")
-    return "\n".join(f"{name}({', '.join(columns)})" for name, columns in tables.items())
+    return _bounded(
+        "\n".join(f"{name}({', '.join(columns)})" for name, columns in tables.items())
+    )
 
 
 TOOLS = [describe_schema, query_database]

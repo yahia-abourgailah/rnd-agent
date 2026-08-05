@@ -382,6 +382,18 @@ def all_projects_for_dedup() -> list[dict]:
         ]
 
 
+def all_areas_for_dedup() -> list[dict]:
+    """Every area with the fields dedup matches on."""
+    with session_scope() as session:
+        rows = session.execute(
+            select(AreaRow.id, AreaRow.name, AreaRow.source_id, AreaRow.city)
+        ).all()
+        return [
+            {"id": r.id, "name": r.name, "source_id": r.source_id, "city": r.city}
+            for r in rows
+        ]
+
+
 def set_canonicals(table, mapping: dict) -> int:
     """Write canonical_id for each {duplicate_id -> canonical_id}. Clears
     canonical_id on rows not in the mapping so re-running is idempotent."""
@@ -400,6 +412,10 @@ def set_developer_canonicals(mapping: dict) -> int:
 
 def set_project_canonicals(mapping: dict) -> int:
     return set_canonicals(ProjectRow, mapping)
+
+
+def set_area_canonicals(mapping: dict) -> int:
+    return set_canonicals(AreaRow, mapping)
 
 
 def remap_projects_to_canonical_developers() -> int:

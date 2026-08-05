@@ -25,13 +25,21 @@ _ROMAN_TOKENS = {
 }
 
 
-def normalize_name(name: str | None) -> str:
-    """Reduce a name to a comparable match key (lowercase, no noise words).
+#: Area-only noise. Kept separate from _NOISE on purpose: "city" as a shared
+#: noise word would reduce the developer "City Edge Developments" to "edge" and
+#: merge it with "EDGE HOLDING", which are different companies.
+_AREA_NOISE = _NOISE | {"city", "el", "al", "area", "compounds", "resorts"}
 
-    Names made entirely of noise words ("Egypt Real Estate Group") keep their
-    tokens instead of normalising to "", which the matcher skips outright — an
-    empty key silently excluded those rows from dedup altogether.
+
+def normalize_area_name(name: str | None) -> str:
+    """Match key for areas, where sources differ on articles and the "City"
+    suffix: "New Cairo"/"New Cairo City", "Ain Sokhna"/"Al Ain Al Sokhna",
+    "Ras El Hekma"/"Ras Al Hekma".
     """
+    return _normalize(name, _AREA_NOISE)
+
+
+def _normalize(name: str | None, noise: set[str]) -> str:
     if not name:
         return ""
     text = _PAREN.sub(" ", name.lower())
@@ -39,5 +47,15 @@ def normalize_name(name: str | None) -> str:
     all_tokens = [
         _ROMAN_TOKENS.get(t, t) for t in _SPACES.sub(" ", text).strip().split(" ") if t
     ]
-    tokens = [t for t in all_tokens if t not in _NOISE]
+    tokens = [t for t in all_tokens if t not in noise]
     return " ".join(tokens or all_tokens)
+
+
+def normalize_name(name: str | None) -> str:
+    """Reduce a name to a comparable match key (lowercase, no noise words).
+
+    Names made entirely of noise words ("Egypt Real Estate Group") keep their
+    tokens instead of normalising to "", which the matcher skips outright — an
+    empty key silently excluded those rows from dedup altogether.
+    """
+    return _normalize(name, _NOISE)

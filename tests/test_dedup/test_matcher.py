@@ -97,3 +97,17 @@ def test_compass_point_variants_stay_apart():
     items = [{"id": 1, "name": "Swan Lake West"}, {"id": 2, "name": "Swan Lake East"}]
 
     assert cluster_entities(items) == []
+
+
+def test_short_names_one_letter_apart_are_not_merged():
+    """'Maadi' is a Cairo district, 'Makadi' a Red Sea resort. They score 91 —
+    a single edit is a small distance but a different place on a short name."""
+    items = [{"id": 1, "name": "Maadi"}, {"id": 2, "name": "Makadi"}]
+
+    assert cluster_entities(items) == []
+
+
+def test_short_names_that_match_exactly_still_merge():
+    items = [{"id": 1, "name": "Hurghada"}, {"id": 2, "name": "hurghada"}]
+
+    assert cluster_entities(items) == [[1, 2]]

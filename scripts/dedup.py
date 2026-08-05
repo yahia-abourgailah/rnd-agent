@@ -1,5 +1,6 @@
-"""Cross-source dedup: recognise the same real developer / project reported by
-different sources and link duplicates to a canonical row (canonical_id).
+"""Cross-source dedup: recognise the same real developer / project / area
+reported by different sources and link duplicates to a canonical row
+(canonical_id).
 
 Order matters: dedup developers first and repoint projects to the canonical
 developer, so project matching can block by developer (only compares projects
@@ -8,7 +9,7 @@ of the same company) — faster and far fewer false matches.
 Re-runnable: canonical_id is reset and recomputed each run.
 
 Usage:
-    python scripts/dedup.py                 # developers + projects
+    python scripts/dedup.py                 # developers, projects, areas
     python scripts/dedup.py --threshold 92  # stricter name matching
 """
 
@@ -21,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from db import repository as repo
 from dedup import matcher, resolver
+from dedup.normalize import normalize_area_name
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("dedup")
@@ -50,11 +52,26 @@ def run(threshold: int) -> None:
         len(projects), len(proj_clusters), len(proj_map),
     )
 
+    # 3. Areas — sources spell the same zone differently ("New Cairo" vs "New
+    # Cairo City"), which split every zone-level aggregate between them.
+    areas = repo.all_areas_for_dedup()
+    area_clusters = matcher.cluster_entities(
+        areas, threshold=threshold, normalizer=normalize_area_name
+    )
+    area_map = resolver.resolve(area_clusters, areas)
+    repo.set_area_canonicals(area_map)
+    logger.info(
+        "areas: %d rows -> %d duplicate clusters, %d rows merged",
+        len(areas), len(area_clusters), len(area_map),
+    )
+
     unique_devs = len(developers) - len(dev_map)
     unique_projects = len(projects) - len(proj_map)
     logger.info(
-        "DONE. unique developers=%d (was %d), unique projects=%d (was %d)",
+        "DONE. unique developers=%d (was %d), unique projects=%d (was %d), "
+        "unique areas=%d (was %d)",
         unique_devs, len(developers), unique_projects, len(projects),
+        len(areas) - len(area_map), len(areas),
     )
 
 

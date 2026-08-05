@@ -186,7 +186,12 @@ class Area(Base):
     raw: Mapped[dict | None] = mapped_column(_Json)
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (UniqueConstraint("external_ref", name="uq_areas_ref"),)
+    canonical_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("areas.id"))
+
+    __table_args__ = (
+        UniqueConstraint("external_ref", name="uq_areas_ref"),
+        Index("ix_areas_canonical_id", "canonical_id"),
+    )
 
 
 class Project(Base):
