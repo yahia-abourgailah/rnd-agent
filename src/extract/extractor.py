@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Protocol
 
 from pydantic import BaseModel, Field, field_validator
@@ -45,7 +45,7 @@ class ExtractedFields(BaseModel):
         if value is None:
             return []
         if isinstance(value, str):
-            value = [part for part in value.split(",")]
+            value = value.split(",")
         return [
             mapped for mapped in (PropertyType.from_source(item) for item in value) if mapped
         ]
@@ -124,7 +124,7 @@ def _to_launch(fields: ExtractedFields, candidate: Candidate) -> Launch:
         **field_values,
         source_url=candidate.source_url,
         source_type=candidate.source_type,
-        first_seen_at=datetime.now(timezone.utc),
+        first_seen_at=datetime.now(UTC),
         raw_content=candidate.text,
     )
 

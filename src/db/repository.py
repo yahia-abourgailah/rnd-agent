@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
@@ -43,7 +43,7 @@ def store_fetch(page: RawPage, source_name: str, content_hash: str, changed: boo
                 content=page.content,
                 content_type=page.content_type.value,
                 byte_size=len(page.content.encode("utf-8")),
-                first_stored_at=datetime.now(timezone.utc),
+                first_stored_at=datetime.now(UTC),
             )
             .on_conflict_do_nothing(index_elements=["content_hash"])
         )
@@ -89,7 +89,7 @@ def save_launches(launches: list[Launch]) -> int:
                     if launch.raw_content.lstrip().startswith(("{", "["))
                     else ContentType.HTML.value,
                     byte_size=len(launch.raw_content.encode("utf-8")),
-                    first_stored_at=datetime.now(timezone.utc),
+                    first_stored_at=datetime.now(UTC),
                 )
                 .on_conflict_do_nothing(index_elements=["content_hash"])
             )
@@ -179,7 +179,7 @@ def _upsert_entities(rows: list[dict], table, update_cols: list[str]) -> dict[st
 
 
 def upsert_developers(developers: list[Developer]) -> dict[str, uuid.UUID]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     smap = source_id_map()
     rows = [
         {
@@ -204,7 +204,7 @@ def upsert_developers(developers: list[Developer]) -> dict[str, uuid.UUID]:
 
 
 def upsert_areas(areas: list[Area]) -> dict[str, uuid.UUID]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     smap = source_id_map()
     rows = [
         {
@@ -228,7 +228,7 @@ def upsert_projects(
     dev_map: dict[str, uuid.UUID],
     area_map: dict[str, uuid.UUID],
 ) -> dict[str, uuid.UUID]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     smap = source_id_map()
     rows = [
         {
@@ -277,7 +277,7 @@ def upsert_projects(
 
 
 def upsert_units(units: list[Unit], project_map: dict[str, uuid.UUID]) -> int:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     smap = source_id_map()
     rows = [
         {

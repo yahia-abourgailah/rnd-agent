@@ -5,7 +5,7 @@ contract probably breaks too.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -20,15 +20,15 @@ from models import (
     SourceType,
 )
 
-REQUIRED_LAUNCH_KWARGS = dict(
-    project_name="Marina Heights",
-    launch_type=LaunchType.NEW_PROJECT,
-    source_url="https://example.com/launch",
-    source_type=SourceType.DEVELOPER_SITE,
-    first_seen_at=datetime.now(timezone.utc),
-    confidence=0.9,
-    raw_content="Marina Heights launching now",
-)
+REQUIRED_LAUNCH_KWARGS = {
+    "project_name": "Marina Heights",
+    "launch_type": LaunchType.NEW_PROJECT,
+    "source_url": "https://example.com/launch",
+    "source_type": SourceType.DEVELOPER_SITE,
+    "first_seen_at": datetime.now(UTC),
+    "confidence": 0.9,
+    "raw_content": "Marina Heights launching now",
+}
 
 
 def test_launch_minimal_required_fields():
@@ -92,7 +92,7 @@ def test_source_evidence_links_to_launch_id():
         launch_id=launch.id,
         source_url=launch.source_url,
         source_name="generic_developer_demo",
-        observed_at=datetime.now(timezone.utc),
+        observed_at=datetime.now(UTC),
         raw_content_hash="abc123",
     )
     assert evidence.launch_id == launch.id

@@ -1,6 +1,6 @@
 import asyncio
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 import httpx
@@ -84,7 +84,7 @@ class Fetcher:
             url=url,
             content=response.text,
             content_type=ContentType.JSON,
-            fetched_at=datetime.now(timezone.utc),
+            fetched_at=datetime.now(UTC),
         )
 
     @_retrying()
@@ -114,5 +114,5 @@ class Fetcher:
             url=url,
             content=html,
             content_type=ContentType.HTML,
-            fetched_at=datetime.now(timezone.utc),
+            fetched_at=datetime.now(UTC),
         )

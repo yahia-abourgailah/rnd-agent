@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -30,7 +30,7 @@ def raw_page() -> RawPage:
         url="https://example-developer.com/launches",
         content=html,
         content_type=ContentType.HTML,
-        fetched_at=datetime.now(timezone.utc),
+        fetched_at=datetime.now(UTC),
     )
 
 
@@ -76,7 +76,7 @@ def test_script_and_style_noise_is_stripped(source_config):
         url="https://example-developer.com/launches",
         content=html,
         content_type=ContentType.HTML,
-        fetched_at=datetime.now(timezone.utc),
+        fetched_at=datetime.now(UTC),
     )
     candidate = GenericDeveloperSiteAdapter(source_config).parse_candidates(page)[0]
 
@@ -93,7 +93,7 @@ def test_near_empty_page_yields_no_candidate(source_config):
         url="https://example-developer.com/launches",
         content="<html><body><div>Loading...</div></body></html>",
         content_type=ContentType.HTML,
-        fetched_at=datetime.now(timezone.utc),
+        fetched_at=datetime.now(UTC),
     )
     assert GenericDeveloperSiteAdapter(source_config).parse_candidates(page) == []
 
@@ -103,6 +103,6 @@ def test_non_html_page_yields_no_candidate(source_config):
         url="https://example.com/api",
         content="{}",
         content_type=ContentType.JSON,
-        fetched_at=datetime.now(timezone.utc),
+        fetched_at=datetime.now(UTC),
     )
     assert GenericDeveloperSiteAdapter(source_config).parse_candidates(json_page) == []

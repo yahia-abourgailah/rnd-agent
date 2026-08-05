@@ -19,8 +19,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from db import repository as repo  # noqa: E402
-from dedup import matcher, resolver  # noqa: E402
+from db import repository as repo
+from dedup import matcher, resolver
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("dedup")
@@ -40,7 +40,9 @@ def run(threshold: int) -> None:
 
     # 2. Projects (block by the now-canonical developer)
     projects = repo.all_projects_for_dedup()
-    proj_clusters = matcher.cluster_entities(projects, threshold=threshold, block_key="developer_id")
+    proj_clusters = matcher.cluster_entities(
+        projects, threshold=threshold, block_key="developer_id"
+    )
     proj_map = resolver.resolve(proj_clusters, projects)
     repo.set_project_canonicals(proj_map)
     logger.info(

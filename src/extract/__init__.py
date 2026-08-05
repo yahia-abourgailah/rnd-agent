@@ -4,4 +4,4 @@ from extract.extractor import (
     extract_launches,
 )
 
-__all__ = ["extract_launches", "ExtractedFields", "ExtractedLaunches"]
+__all__ = ["ExtractedFields", "ExtractedLaunches", "extract_launches"]

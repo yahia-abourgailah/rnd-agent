@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -29,7 +29,7 @@ def _json_page(records: list[dict]) -> RawPage:
         url="https://www.nawy.com/new-launches",
         content=json.dumps(records),
         content_type=ContentType.JSON,
-        fetched_at=datetime.now(timezone.utc),
+        fetched_at=datetime.now(UTC),
     )
 
 
@@ -141,7 +141,7 @@ def test_empty_or_unparseable_payload_yields_nothing(source):
         url="https://www.nawy.com/new-launches",
         content="not json",
         content_type=ContentType.JSON,
-        fetched_at=datetime.now(timezone.utc),
+        fetched_at=datetime.now(UTC),
     )
     assert adapter.parse_candidates(broken) == []
 

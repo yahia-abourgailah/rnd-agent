@@ -11,16 +11,16 @@ Revises: b7f1a2c3d4e5
 Create Date: 2026-07-27 00:00:00.000000
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = 'c9d2e3f4a5b6'
-down_revision: Union[str, Sequence[str], None] = 'b7f1a2c3d4e5'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = 'b7f1a2c3d4e5'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 _UUID = postgresql.UUID(as_uuid=True)
 _UUID_DEFAULT = sa.text('gen_random_uuid()')  # native in PostgreSQL 13+

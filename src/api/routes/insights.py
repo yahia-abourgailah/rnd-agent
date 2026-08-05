@@ -43,7 +43,9 @@ def _scoped(stmt, source: str | None, zone: str | None, dedup: bool = True):
     if source:
         stmt = stmt.join(Source, Source.id == Project.source_id).where(Source.name == source)
     if zone:
-        stmt = stmt.join(Area, Area.id == Project.area_id).where(func.lower(Area.name) == zone.lower())
+        stmt = stmt.join(Area, Area.id == Project.area_id).where(
+            func.lower(Area.name) == zone.lower()
+        )
     return stmt
 
 
@@ -137,7 +139,9 @@ def zones(
             median_price=_round(med),
             max_price=_round(maxp),
         )
-        for name, city, projects, developers, launches, minp, med, maxp in session.execute(stmt).all()
+        for name, city, projects, developers, launches, minp, med, maxp in (
+            session.execute(stmt).all()
+        )
     ]
     return ZonesResponse(source=source, results=results)
 
@@ -167,7 +171,7 @@ def price_distribution(
         None,
         dedup,
     )
-    counts = {b: n for b, n in session.execute(stmt).all()}
+    counts = dict(session.execute(stmt).all())
     total = sum(counts.values())
     results = [
         PriceBracketRow(
@@ -286,7 +290,10 @@ def whitespace(
     scored.sort(key=lambda r: r.opportunity_score, reverse=True)
     return WhitespaceResponse(
         source=source,
-        note="opportunity_score blends low competition (60%) + price level (40%); directional, not a demand guarantee.",
+        note=(
+            "opportunity_score blends low competition (60%) + price level (40%); "
+            "directional, not a demand guarantee."
+        ),
         results=scored[:limit],
     )
 

@@ -21,8 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from backfill import nawy_client as nc
-from backfill import property_finder_client as pf
+from backfill import nawy_client as nc, property_finder_client as pf
 from db import repository as repo
 from watch.adapters.nawy import fetch_units_for_compounds
 from watch.fetcher import Fetcher
@@ -73,7 +72,7 @@ async def run_nawy(units_scope: str, limit: int | None) -> None:
     if units_scope == "all":
         target_ids = [int(p.source_id) for p in projects]
     else:
-        target_ids = [cid for cid in launch_ids]
+        target_ids = list(launch_ids)
         if limit is not None:
             loaded = {int(p.source_id) for p in projects}
             target_ids = [cid for cid in target_ids if cid in loaded]
