@@ -1,6 +1,16 @@
+from enum import Enum
+
 from pydantic import BaseModel
 
 from models.clean import CleanStr
+
+
+class SaleType(str, Enum):
+    """Who is selling. The catalogue tracks primary/off-plan stock; resale is a
+    different market and is filtered out at collection time."""
+
+    PRIMARY = "primary"
+    RESALE = "resale"
 
 
 class Unit(BaseModel):
@@ -23,4 +33,5 @@ class Unit(BaseModel):
     currency: CleanStr | None = None
     ready_by: str | None = None
     finishing: CleanStr | None = None
+    sale_type: SaleType = SaleType.PRIMARY
     raw: dict | None = None

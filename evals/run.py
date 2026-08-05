@@ -12,6 +12,7 @@ knows what breaks if it is deleted.
 
 import json
 import pathlib
+import re
 import sys
 import uuid
 
@@ -31,14 +32,24 @@ def load() -> list[dict]:
         return [json.loads(line) for line in handle if line.strip()]
 
 
+def _comparable(text: str) -> str:
+    """Lowercased, with digit grouping removed.
+
+    The model writes "1,976" where the expected value is "1976"; that is a
+    formatting choice, not a wrong answer, and the harness must not fail it.
+    """
+    return re.sub(r"(?<=\d),(?=\d)", "", text.lower())
+
+
 def check(case: dict, output: str, tools_called: list[str]) -> list[str]:
     failures = []
     expect = case["expect"]
+    haystack = _comparable(output)
     for needle in expect.get("contains", []):
-        if needle.lower() not in output.lower():
+        if _comparable(needle) not in haystack:
             failures.append(f"missing {needle!r}")
     for needle in expect.get("not_contains", []):
-        if needle.lower() in output.lower():
+        if _comparable(needle) in haystack:
             failures.append(f"should not contain {needle!r}")
     for tool_name in expect.get("tools", []):
         if tool_name not in tools_called:

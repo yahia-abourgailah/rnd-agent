@@ -14,7 +14,7 @@ from models.launch import (
 from models.page import Candidate, ContentType, RawPage
 from models.project import Project
 from models.source import SourceConfig, SourceTier, SourceType
-from models.unit import Unit
+from models.unit import SaleType, Unit
 
 __all__ = [
     "Area",
@@ -28,6 +28,7 @@ __all__ = [
     "Project",
     "PropertyType",
     "RawPage",
+    "SaleType",
     "SizeRange",
     "SourceConfig",
     "SourceEvidence",

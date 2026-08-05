@@ -88,6 +88,29 @@ class Fetcher:
         )
 
     @_retrying()
+    async def post_json(self, url: str, json: dict, headers: dict | None = None) -> RawPage:
+        """POST a JSON body and return the response, with the same retry and
+        per-host rate limiting as fetch_json.
+
+        Some search APIs take their filters in a POST body rather than the query
+        string; `headers` exists because those endpoints are often gated on
+        client identification headers.
+        """
+        await self._rate_limiter.wait(url)
+        request_headers = {"User-Agent": settings.user_agent, **(headers or {})}
+        async with httpx.AsyncClient(
+            timeout=self.timeout_seconds, headers=request_headers
+        ) as client:
+            response = await client.post(url, json=json)
+            response.raise_for_status()
+        return RawPage(
+            url=url,
+            content=response.text,
+            content_type=ContentType.JSON,
+            fetched_at=datetime.now(UTC),
+        )
+
+    @_retrying()
     async def fetch_rendered_html(self, url: str, wait_for_selector: str | None = None) -> RawPage:
         """
         Fetch a JS-rendered page via Playwright and return the final DOM HTML.

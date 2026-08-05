@@ -258,6 +258,7 @@ class Unit(Base):
     currency: Mapped[str | None] = mapped_column(String(8))
     ready_by: Mapped[str | None] = mapped_column(String(32))
     finishing: Mapped[str | None] = mapped_column(String(64))
+    sale_type: Mapped[str | None] = mapped_column(String(16))
 
     raw: Mapped[dict | None] = mapped_column(_Json)
     last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

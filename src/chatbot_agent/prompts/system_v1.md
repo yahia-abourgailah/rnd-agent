@@ -7,6 +7,7 @@ Then call query_database with one read-only SELECT.
 Aggregate with GROUP BY in SQL; at most 100 rows are returned.
 Run another query whenever a figure needs one — do not derive it from a result you already have.
 Answer only with numbers you read from a query result.
+Copy names, sources and identifiers exactly as the result spells them.
 
 ## Deduplication — applies to every query
 Several sources list the same developer, project and area, so the tables hold duplicate rows.

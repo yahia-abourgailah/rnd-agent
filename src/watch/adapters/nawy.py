@@ -35,51 +35,97 @@ _FIELD_MAP = {
 
 # The listing payload carries no unit sizes, property types or delivery dates —
 # those live on individual unit records, which the site loads from this public
-# JSON API. One query can cover many compounds at once, so enrichment costs a
-# handful of requests rather than one per launch.
-PROPERTIES_API = "https://listing-api.nawy.com/v1/search/properties"
-MAX_PAGE_SIZE = 50  # the API rejects anything larger
-MAX_PAGES = 40  # safety stop so a pagination bug can't crawl forever
-# Compound ids go in the query string, and the API 400s once the URL grows too
-# long (20 ids pass, 24 fail), so ask about a limited number at a time.
-IDS_PER_REQUEST = 12
+# JSON API. It takes its filters in a POST body, pages 500 at a time, and can
+# filter server-side by compound and by sale type.
+PROPERTIES_API = "https://webapi.nawy.com/api/properties/search"
+NAWY_CLIENT_ID = "d7X2j6PjCG"
+MAX_PAGE_SIZE = 500
+MAX_PAGES = 60  # safety stop so a pagination bug can't crawl forever
+
+# Primary/off-plan only: resale units are a different market and are not what
+# this product tracks. The API filters on the PRESENCE of this key — it ignores
+# the value, returning non-resale for both true and false — so the result is
+# also asserted per record below rather than trusted.
+_PRIMARY_ONLY_FILTER = {"resale": {"value": False}}
+
+#: Unit record field names on the web API, named once so the mapper in
+#: backfill/nawy_client.py and the aggregation here cannot drift apart.
+UNIT_AREA = "min_unit_area"
+UNIT_TYPE = "property_type"
+UNIT_READY_BY = "min_ready_by"
+UNIT_PRICE = "min_price"
 
 #: Internal bookkeeping keys, stripped before the record reaches the LLM.
 _INTERNAL_KEYS = ("compound_id",)
 
 
-async def fetch_units_for_compounds(fetcher, compound_ids: list[int]) -> list[dict]:
-    """Every unit record Nawy lists for the given compounds.
+def _webapi_headers() -> dict:
+    """Nawy's web API rejects requests without its browser client headers."""
+    return {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en",
+        "client-id": NAWY_CLIENT_ID,
+        "content-type": "application/json",
+        "origin": "https://www.nawy.com",
+        "referer": "https://www.nawy.com/",
+        "platform": "web",
+    }
 
-    Owns the API's two constraints so callers don't reimplement them: compound
-    ids ride in the query string and the API 400s once the URL grows too long,
-    so ids are chunked; each chunk is then paginated to exhaustion.
+
+def is_primary(unit: dict) -> bool:
+    """Whether a unit is sold by the developer rather than resold."""
+    return unit.get("resale") is not True
+
+
+async def fetch_primary_units(
+    fetcher, compound_id: int | None = None, limit: int | None = None
+) -> list[dict]:
+    """Every primary/off-plan unit Nawy lists, optionally for one compound.
+
+    Resale units are excluded server-side and the exclusion is then re-checked
+    per record, because the filter's contract is undocumented: the API returns
+    non-resale results for any value of the key, so a change in its behaviour
+    would otherwise silently readmit resale stock.
     """
-    ids = [i for i in compound_ids if i is not None]
     units: list[dict] = []
-    for start in range(0, len(ids), IDS_PER_REQUEST):
-        chunk = ids[start : start + IDS_PER_REQUEST]
-        collected = 0
-        for page_number in range(1, MAX_PAGES + 1):
-            params = [("page", page_number), ("pageSize", MAX_PAGE_SIZE)]
-            params += [("compoundsIds[]", i) for i in chunk]
-            response = await fetcher.fetch_json(PROPERTIES_API, params=params)
-            try:
-                body = json.loads(response.content)
-            except json.JSONDecodeError:
-                logger.warning("Non-JSON unit payload for compounds %s page %s", chunk, page_number)
-                break
-            batch = body.get("results") or []
-            units.extend(batch)
-            collected += len(batch)
-            if len(batch) < MAX_PAGE_SIZE or collected >= body.get("total", 0):
-                break
-        else:
+    start = 1
+    for _ in range(MAX_PAGES):
+        body = {
+            "show": "property",
+            "start": start,
+            "page_size": MAX_PAGE_SIZE,
+            **_PRIMARY_ONLY_FILTER,
+        }
+        if compound_id is not None:
+            body["compound_id"] = compound_id
+
+        response = await fetcher.post_json(
+            PROPERTIES_API, json=body, headers=_webapi_headers()
+        )
+        try:
+            payload = json.loads(response.content)
+        except json.JSONDecodeError:
+            logger.warning("Non-JSON unit payload at start=%s", start)
+            break
+
+        batch = payload.get("values") or []
+        primary = [unit for unit in batch if is_primary(unit)]
+        if len(primary) != len(batch):
             logger.warning(
-                "Hit the %s-page cap for compounds %s; unit data may be truncated",
-                MAX_PAGES,
-                chunk,
+                "Server-side resale filter let %d resale unit(s) through at start=%s; "
+                "dropped client-side",
+                len(batch) - len(primary),
+                start,
             )
+        units.extend(primary)
+
+        if limit is not None and len(units) >= limit:
+            return units[:limit]
+        if len(batch) < MAX_PAGE_SIZE:
+            break
+        start += MAX_PAGE_SIZE
+    else:
+        logger.warning("Hit the %s-page cap; unit data may be truncated", MAX_PAGES)
     return units
 
 
@@ -153,8 +199,15 @@ class NawyAdapter(BaseAdapter):
         return records
 
     async def _fetch_unit_facts(self, compound_ids: list[int]) -> dict[int, dict]:
-        """Aggregate unit-level facts per compound from Nawy's listing API."""
-        units = await fetch_units_for_compounds(self.fetcher, compound_ids)
+        """Aggregate primary unit facts per compound, one request per compound.
+
+        The API filters by a single compound_id, and a launch page carries a
+        handful of compounds, so this is a few requests rather than a scan of
+        the whole catalogue.
+        """
+        units: list[dict] = []
+        for compound_id in [i for i in compound_ids if i is not None]:
+            units.extend(await fetch_primary_units(self.fetcher, compound_id=compound_id))
         return self.aggregate_unit_facts(units)
 
     @staticmethod
@@ -174,9 +227,17 @@ class NawyAdapter(BaseAdapter):
 
         facts: dict[int, dict] = {}
         for compound_id, compound_units in grouped.items():
-            areas = [u["unitArea"] for u in compound_units if u.get("unitArea")]
-            types = sorted({u["propertyType"] for u in compound_units if u.get("propertyType")})
-            years = sorted({u["readyBy"][:4] for u in compound_units if u.get("readyBy")})
+            areas = [u[UNIT_AREA] for u in compound_units if u.get(UNIT_AREA)]
+            types = sorted(
+                {
+                    name
+                    for u in compound_units
+                    if (name := (u.get(UNIT_TYPE) or {}).get("name"))
+                }
+            )
+            years = sorted(
+                {str(u[UNIT_READY_BY])[:4] for u in compound_units if u.get(UNIT_READY_BY)}
+            )
 
             entry: dict = {}
             if types:

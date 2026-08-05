@@ -79,12 +79,12 @@ def test_aggregate_unit_facts_builds_size_range_and_types():
     """unit_sizes is a range in the Launch contract, so it can only come from
     looking across every unit in a compound."""
     units = [
-        {"compound": {"id": 2458}, "unitArea": 100, "propertyType": "Chalet",
-         "readyBy": "2030-07-04T00:00:00.000Z"},
-        {"compound": {"id": 2458}, "unitArea": 575, "propertyType": "Villa",
-         "readyBy": "2030-01-01T00:00:00.000Z"},
-        {"compound": {"id": 2458}, "unitArea": 300, "propertyType": "Chalet",
-         "readyBy": "2030-01-01T00:00:00.000Z"},
+        {"compound": {"id": 2458}, "min_unit_area": 100,
+         "property_type": {"name": "Chalet"}, "min_ready_by": "2030-07-04"},
+        {"compound": {"id": 2458}, "min_unit_area": 575,
+         "property_type": {"name": "Villa"}, "min_ready_by": "2030-01-01"},
+        {"compound": {"id": 2458}, "min_unit_area": 300,
+         "property_type": {"name": "Chalet"}, "min_ready_by": "2030-01-01"},
     ]
     facts = NawyAdapter.aggregate_unit_facts(units)[2458]
 
@@ -95,8 +95,8 @@ def test_aggregate_unit_facts_builds_size_range_and_types():
 
 def test_delivery_spanning_years_is_reported_as_a_range():
     units = [
-        {"compound": {"id": 1}, "readyBy": "2025-05-01T00:00:00.000Z"},
-        {"compound": {"id": 1}, "readyBy": "2031-05-01T00:00:00.000Z"},
+        {"compound": {"id": 1}, "min_ready_by": "2025-05-01"},
+        {"compound": {"id": 1}, "min_ready_by": "2031-05-01"},
     ]
     assert NawyAdapter.aggregate_unit_facts(units)[1]["delivery_date"] == "2025-2031"
 
@@ -107,7 +107,7 @@ def test_units_without_facts_do_not_invent_fields():
 
 
 def test_units_with_no_compound_are_skipped():
-    assert NawyAdapter.aggregate_unit_facts([{"unitArea": 100}]) == {}
+    assert NawyAdapter.aggregate_unit_facts([{"min_unit_area": 100}]) == {}
 
 
 # --- turning records into a candidate --------------------------------------

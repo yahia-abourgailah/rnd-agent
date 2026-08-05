@@ -26,12 +26,20 @@ from models import (
     Availability,
     Developer,
     Project,
+    SaleType,
     Unit,
     canonical_property_type,
     delivery_year,
     normalize_property_types,
 )
-from watch.adapters.nawy import NawyAdapter
+from watch.adapters.nawy import (
+    UNIT_AREA,
+    UNIT_PRICE,
+    UNIT_READY_BY,
+    UNIT_TYPE,
+    NawyAdapter,
+    is_primary,
+)
 from watch.fetcher import Fetcher
 
 logger = logging.getLogger(__name__)
@@ -162,6 +170,10 @@ def _plan_field(raw: dict, field: str):
     Falls back per field rather than picking a whole plan: Nawy routinely sends
     a developerPlan carrying a price but a null readyBy while the resalePlan
     carries the delivery date, so choosing one dict wholesale drops real data.
+
+    Only safe for facts that belong to the building rather than to the sale.
+    Delivery date qualifies; price does not, which is why min_price reads the
+    developer plan directly — a resale price is not the project's asking price.
     """
     for plan_key in ("developerPlan", "resalePlan"):
         value = (raw.get(plan_key) or {}).get(field)
@@ -183,8 +195,8 @@ def map_compound(raw: dict, launch_ids: set[int]) -> Project | None:
         slug=raw.get("slug"),
         developer_source_id=str(raw["developerId"]) if raw.get("developerId") else None,
         area_source_id=str(raw["areaId"]) if raw.get("areaId") else None,
-        min_price=_plan_field(raw, "minPrice"),
-        currency=_plan_field(raw, "currency"),
+        min_price=(raw.get("developerPlan") or {}).get("minPrice") or None,
+        currency=(raw.get("developerPlan") or {}).get("currency"),
         property_types=property_types,
         is_launch=raw.get("id") in launch_ids,
         delivery_date=delivery_year(_plan_field(raw, "readyBy")),
@@ -195,22 +207,32 @@ def map_compound(raw: dict, launch_ids: set[int]) -> Project | None:
 
 
 def map_unit(raw: dict) -> Unit | None:
-    if raw.get("id") is None:
+    """Map one web-API unit record.
+
+    Returns None for resale units as well as unidentifiable ones: this product
+    tracks primary and off-plan stock, and the mapper is the last place a resale
+    record can be stopped before it reaches the catalogue.
+
+    Nawy sends 0 for a price or area it has not published — common on unlaunched
+    compounds. Those become NULL rather than a literal zero, which would read as
+    "free" or "no space" and sort to the top of any cheapest-first view.
+    """
+    if raw.get("id") is None or not is_primary(raw):
         return None
-    pay = raw.get("paymentPlan") or {}
     compound = raw.get("compound") or {}
     return Unit(
         source=SOURCE,
         source_id=str(raw["id"]),
         project_source_id=str(compound["id"]) if compound.get("id") else None,
-        property_type=canonical_property_type(raw.get("propertyType")),
-        unit_area_sqm=raw.get("unitArea"),
-        bedrooms=raw.get("numberOfBedrooms"),
-        bathrooms=raw.get("numberOfBathrooms"),
-        price=pay.get("minPrice") or None,
-        currency=pay.get("currency"),
-        ready_by=_date_from_unit_readyby(raw.get("readyBy")),
+        property_type=canonical_property_type((raw.get(UNIT_TYPE) or {}).get("name")),
+        unit_area_sqm=raw.get(UNIT_AREA) or None,
+        bedrooms=raw.get("number_of_bedrooms"),
+        bathrooms=raw.get("number_of_bathrooms"),
+        price=raw.get(UNIT_PRICE) or None,
+        currency=raw.get("currency"),
+        ready_by=_date_from_unit_readyby(raw.get(UNIT_READY_BY)),
         finishing=raw.get("finishing"),
+        sale_type=SaleType.PRIMARY,
         raw=raw,
     )
 

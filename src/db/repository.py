@@ -294,6 +294,7 @@ def upsert_units(units: list[Unit], project_map: dict[str, uuid.UUID]) -> int:
             "currency": u.currency,
             "ready_by": u.ready_by,
             "finishing": u.finishing,
+            "sale_type": u.sale_type.value if u.sale_type else None,
             "raw": u.raw,
             "last_synced_at": now,
         }
@@ -312,6 +313,7 @@ def upsert_units(units: list[Unit], project_map: dict[str, uuid.UUID]) -> int:
             "currency",
             "ready_by",
             "finishing",
+            "sale_type",
             "raw",
             "last_synced_at",
         ],

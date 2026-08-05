@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from backfill import nawy_client as nc, property_finder_client as pf
 from db import repository as repo
-from watch.adapters.nawy import fetch_units_for_compounds
+from watch.adapters.nawy import fetch_primary_units
 from watch.fetcher import Fetcher
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -78,7 +78,16 @@ async def run_nawy(units_scope: str, limit: int | None) -> None:
             target_ids = [cid for cid in target_ids if cid in loaded]
     logger.info("fetching units for %d compounds (scope=%s)", len(target_ids), units_scope)
 
-    unit_raw = await fetch_units_for_compounds(fetcher, target_ids)
+    unit_raw: list[dict] = []
+    if units_scope == "all":
+        # One catalogue-wide scan, 500 per page, instead of a request per
+        # compound: the API filters resale server-side and pages far larger.
+        unit_raw = await fetch_primary_units(fetcher)
+        loaded = {int(p.source_id) for p in projects}
+        unit_raw = [u for u in unit_raw if (u.get("compound") or {}).get("id") in loaded]
+    else:
+        for compound_id in target_ids:
+            unit_raw.extend(await fetch_primary_units(fetcher, compound_id=compound_id))
     units = [u for u in (nc.map_unit(r) for r in unit_raw) if u]
     n_units = repo.upsert_units(units, project_map)
     logger.info("upserted %d units", n_units)
