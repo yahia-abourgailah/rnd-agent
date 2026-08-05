@@ -19,7 +19,13 @@ import json
 import logging
 import re
 
-from models import Area, Developer, Project
+from models import (
+    Area,
+    Developer,
+    Project,
+    delivery_year,
+    normalize_property_types,
+)
 from watch.fetcher import Fetcher
 
 logger = logging.getLogger(__name__)
@@ -110,10 +116,10 @@ def map_project(raw: dict) -> Project | None:
         area_source_id=_slug(district) if district else None,
         min_price=float(price) if price else None,
         currency="EGP",  # Property Finder Egypt prices; no currency field in payload
-        property_types=raw.get("propertyTypes") or [],
+        property_types=normalize_property_types(raw.get("propertyTypes") or []),
         # Everything on the new-projects feed is a new/off-plan development.
         is_launch=True,
-        delivery_date=delivery[:10] or None,
+        delivery_date=delivery_year(delivery),
         image_url=images[0] if images else None,
         description=location.get("fullName"),
         raw=raw,

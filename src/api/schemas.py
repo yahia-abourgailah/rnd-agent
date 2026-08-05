@@ -1,6 +1,8 @@
-"""Response models for the read/insights API (the shapes the CRM consumes)."""
+"""Request/response models for the read/insights API (the shapes the CRM consumes)."""
 
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, Field, StringConstraints
 
 
 class MarketShareRow(BaseModel):
@@ -124,3 +126,19 @@ class QualityResponse(BaseModel):
     source_coverage: list[SourceCoverageRow]
     completeness: CompletenessStat
     note: str
+
+
+class ChatRequest(BaseModel):
+    message: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1, max_length=2000),
+    ]
+    conversation_id: str | None = Field(
+        default=None,
+        description="Omit to start a new conversation; echo back to continue one.",
+    )
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    conversation_id: str

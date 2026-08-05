@@ -20,7 +20,16 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 
-from models import Area, Availability, Developer, Project, Unit
+from models import (
+    Area,
+    Availability,
+    Developer,
+    Project,
+    Unit,
+    canonical_property_type,
+    delivery_year,
+    normalize_property_types,
+)
 from watch.adapters.nawy import (
     NawyAdapter,
     _IDS_PER_REQUEST,
@@ -137,14 +146,6 @@ async def fetch_launch_compound_ids(fetcher: Fetcher) -> set[int]:
 # --------------------------------------------------------------------------- #
 # Mapping (pure — unit-testable without network)
 # --------------------------------------------------------------------------- #
-def _year_from_compound_readyby(ready_by) -> str | None:
-    """Compound plans report readyBy as an int YYYYMMDD (e.g. 20291230)."""
-    if not ready_by:
-        return None
-    text = str(ready_by)
-    return text[:4] if len(text) >= 4 else None
-
-
 def _date_from_unit_readyby(ready_by) -> str | None:
     """Unit records report readyBy as an ISO datetime ("2030-07-06T...")."""
     if not ready_by:
@@ -179,13 +180,26 @@ def map_area(raw: dict) -> Area | None:
     )
 
 
+def _plan_field(raw: dict, field: str):
+    """Read one plan field, preferring the developer plan.
+
+    Falls back per field rather than picking a whole plan: Nawy routinely sends
+    a developerPlan carrying a price but a null readyBy while the resalePlan
+    carries the delivery date, so choosing one dict wholesale drops real data.
+    """
+    for plan_key in ("developerPlan", "resalePlan"):
+        value = (raw.get(plan_key) or {}).get(field)
+        if value:
+            return value
+    return None
+
+
 def map_compound(raw: dict, launch_ids: set[int]) -> Project | None:
     if raw.get("id") is None or not raw.get("name"):
         return None
-    plan = raw.get("developerPlan") or raw.get("resalePlan") or {}
-    property_types = [
+    property_types = normalize_property_types(
         pt["name"] for pt in (raw.get("propertyTypes") or []) if pt.get("name")
-    ]
+    )
     return Project(
         source=SOURCE,
         source_id=str(raw["id"]),
@@ -193,11 +207,11 @@ def map_compound(raw: dict, launch_ids: set[int]) -> Project | None:
         slug=raw.get("slug"),
         developer_source_id=str(raw["developerId"]) if raw.get("developerId") else None,
         area_source_id=str(raw["areaId"]) if raw.get("areaId") else None,
-        min_price=plan.get("minPrice") or None,
-        currency=plan.get("currency"),
+        min_price=_plan_field(raw, "minPrice"),
+        currency=_plan_field(raw, "currency"),
         property_types=property_types,
         is_launch=raw.get("id") in launch_ids,
-        delivery_date=_year_from_compound_readyby(plan.get("readyBy")),
+        delivery_date=delivery_year(_plan_field(raw, "readyBy")),
         image_url=raw.get("imageUrl"),
         description=raw.get("subtitle"),
         raw=raw,
@@ -213,7 +227,7 @@ def map_unit(raw: dict) -> Unit | None:
         source=SOURCE,
         source_id=str(raw["id"]),
         project_source_id=str(compound["id"]) if compound.get("id") else None,
-        property_type=raw.get("propertyType"),
+        property_type=canonical_property_type(raw.get("propertyType")),
         unit_area_sqm=raw.get("unitArea"),
         bedrooms=raw.get("numberOfBedrooms"),
         bathrooms=raw.get("numberOfBathrooms"),

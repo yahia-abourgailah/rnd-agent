@@ -1,12 +1,18 @@
 """Interactive REPL for the chatbot agent.
 
-Usage: python -m chatbot_agent.app
+Usage: python -m chatbot_agent.app [conversation_id]
+
+Shares the Postgres checkpointer with the HTTP endpoint, so a conversation
+started here can be continued over the API with the same id.
 """
 
 import logging
+import sys
+import uuid
 
 from langchain_core.messages import AIMessage, HumanMessage
 
+from chatbot_agent.checkpointer import conversation_checkpointer
 from chatbot_agent.graph import build_graph
 from config.settings import settings
 
@@ -15,28 +21,30 @@ _EXIT_COMMANDS = {"exit", "quit"}
 
 def main() -> None:
     logging.basicConfig(level=settings.log_level)
-    graph = build_graph()
-    # Carried across turns so follow-ups ("and in New Cairo?") resolve against
-    # what was already asked; each turn previously started from an empty state.
-    history: list = []
+    conversation_id = sys.argv[1] if len(sys.argv) > 1 else str(uuid.uuid4())
+    config = {"configurable": {"thread_id": conversation_id}}
+    print(f"conversation: {conversation_id}")
 
-    while True:
-        try:
-            question = input("You: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print()
-            return
-        if not question:
-            continue
-        if question.lower() in _EXIT_COMMANDS:
-            return
+    with conversation_checkpointer() as checkpointer:
+        graph = build_graph(checkpointer)
 
-        history.append(HumanMessage(content=question))
-        result = graph.invoke({"messages": history})
-        history = result["messages"]
+        while True:
+            try:
+                question = input("You: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                return
+            if not question:
+                continue
+            if question.lower() in _EXIT_COMMANDS:
+                return
 
-        last = history[-1]
-        print("Bot:", last.content if isinstance(last, AIMessage) else last)
+            result = graph.invoke(
+                {"messages": [HumanMessage(content=question)]},
+                config=config,
+            )
+            last = result["messages"][-1]
+            print("Bot:", last.content if isinstance(last, AIMessage) else last)
 
 
 if __name__ == "__main__":

@@ -38,13 +38,17 @@ class ExtractedFields(BaseModel):
     def _coerce_to_list(cls, value):
         """Real models are loose with list fields: gemma-4 emits null for an
         absent list and a bare string when there is exactly one value. Coerce
-        both rather than failing an entire page's extraction."""
+        both, and map each entry onto the shared vocabulary, rather than failing
+        an entire page's extraction. Entries the vocabulary doesn't recognise
+        are dropped here — unlike the catalogue, Launch.property_types is typed
+        to the enum, so an unmappable value cannot be carried."""
         if value is None:
             return []
         if isinstance(value, str):
-            # single value, or a comma-separated string
-            return [part.strip() for part in value.split(",") if part.strip()]
-        return value
+            value = [part for part in value.split(",")]
+        return [
+            mapped for mapped in (PropertyType.from_source(item) for item in value) if mapped
+        ]
 
     @field_validator("confidence", mode="before")
     @classmethod

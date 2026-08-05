@@ -18,8 +18,12 @@ _NUM_RE = re.compile(r"\d+")
 
 
 def _numbers(name: str) -> list[str]:
-    """Numeric tokens in a name. 'La Vista 6' -> ['6']. Numbers distinguish
-    real projects (phase 1 ≠ phase 2), so a fuzzy match must agree on them."""
+    """Numeric tokens in an already-normalised name. 'La Vista 6' -> ['6'].
+
+    Numbers distinguish real projects (phase 1 is not phase 2), so a fuzzy match
+    must agree on them. Roman numerals are already folded to digits by
+    normalize_name, so they are covered here too.
+    """
     return sorted(_NUM_RE.findall(name))
 
 
@@ -52,19 +56,24 @@ def cluster_entities(
     norm = {it["id"]: normalize_name(it["name"]) for it in items}
     uf = _UnionFind([it["id"] for it in items])
 
-    # 1) exact normalised-name matches (cheap, high precision)
-    by_norm: dict[str, list] = defaultdict(list)
-    for it in items:
-        if norm[it["id"]]:
-            by_norm[norm[it["id"]]].append(it["id"])
-    for ids in by_norm.values():
-        for other in ids[1:]:
-            uf.union(ids[0], other)
-
-    # 2) fuzzy matches within each block
     blocks: dict[object, list[dict]] = defaultdict(list)
     for it in items:
         blocks[it.get(block_key) if block_key else None].append(it)
+
+    # 1) exact normalised-name matches (cheap, high precision), within a block.
+    # Blocking applies here too: two developers each having a project called
+    # "The Address" is common, and merging them across developers was exactly
+    # what block_key was meant to prevent.
+    for bucket in blocks.values():
+        by_norm: dict[str, list] = defaultdict(list)
+        for it in bucket:
+            if norm[it["id"]]:
+                by_norm[norm[it["id"]]].append(it["id"])
+        for ids in by_norm.values():
+            for other in ids[1:]:
+                uf.union(ids[0], other)
+
+    # 2) fuzzy matches within each block
 
     for bucket in blocks.values():
         for i in range(len(bucket)):

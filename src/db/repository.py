@@ -123,23 +123,43 @@ def source_id_map() -> dict[str, int]:
         return dict(session.execute(select(SourceRow.name, SourceRow.id)).all())
 
 
+def _merge_duplicate_refs(rows: list[dict]) -> list[dict]:
+    """Collapse rows sharing an external_ref, keeping every non-null field.
+
+    Postgres refuses to update the same conflict target twice in one statement,
+    so duplicates must be collapsed first. The same entity often arrives from
+    two endpoints with complementary gaps — an area from /v1/areas carries slug
+    and raw but no city, the same area derived from a compound carries city but
+    neither — so a later row must not blank a field an earlier one filled.
+    """
+    merged: dict[str, dict] = {}
+    for row in rows:
+        row.setdefault("id", uuid.uuid4())
+        existing = merged.get(row["external_ref"])
+        if existing is None:
+            merged[row["external_ref"]] = dict(row)
+            continue
+        for key, value in row.items():
+            if value is not None and key != "id":
+                existing[key] = value
+    return list(merged.values())
+
+
 def _upsert_entities(rows: list[dict], table, update_cols: list[str]) -> dict[str, uuid.UUID]:
     """Bulk upsert entity rows; return {external_ref: our generated UUID}.
 
     Each row is stamped with a fresh UUID for the INSERT case; on conflict the
     existing row keeps its UUID (id is not in update_cols) and RETURNING hands
     back whichever id actually persisted.
+
+    Updates COALESCE against the stored value, so a partial re-sync enriches a
+    row and never blanks a field it has no opinion about. Clearing a field is
+    therefore not possible through this path — that is deliberate for
+    multi-endpoint enrichment, and needs a targeted UPDATE if it is ever wanted.
     """
     if not rows:
         return {}
-    # Postgres refuses to update the same conflict target twice in one statement,
-    # so collapse duplicate external_ref rows first (last one wins), and give
-    # each a candidate id for the insert path.
-    deduped: dict[str, dict] = {}
-    for r in rows:
-        r.setdefault("id", uuid.uuid4())
-        deduped[r["external_ref"]] = r
-    unique_rows = list(deduped.values())
+    unique_rows = _merge_duplicate_refs(rows)
 
     id_map: dict[str, uuid.UUID] = {}
     with session_scope() as session:
@@ -148,7 +168,10 @@ def _upsert_entities(rows: list[dict], table, update_cols: list[str]) -> dict[st
             stmt = insert(table).values(chunk)
             stmt = stmt.on_conflict_do_update(
                 index_elements=["external_ref"],
-                set_={c: stmt.excluded[c] for c in update_cols},
+                set_={
+                    c: func.coalesce(stmt.excluded[c], getattr(table, c))
+                    for c in update_cols
+                },
             ).returning(table.id, table.external_ref)
             for row_id, ref in session.execute(stmt).all():
                 id_map[ref] = row_id

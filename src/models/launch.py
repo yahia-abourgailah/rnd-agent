@@ -1,4 +1,6 @@
+import re
 import uuid
+from collections.abc import Iterable
 from datetime import datetime
 from enum import Enum
 
@@ -15,6 +17,13 @@ class LaunchType(str, Enum):
 
 
 class PropertyType(str, Enum):
+    """The single vocabulary for property types across every write path.
+
+    Sources spell these their own way ("Twinhouse", "Twin House", "twin_house").
+    Anything writing a property type must go through `from_source` so the
+    relational catalogue and the extracted launches stay groupable together.
+    """
+
     APARTMENT = "apartment"
     DUPLEX = "duplex"
     PENTHOUSE = "penthouse"
@@ -26,6 +35,55 @@ class PropertyType(str, Enum):
     STUDIO = "studio"
     LOFT = "loft"
     CABIN = "cabin"
+
+    @classmethod
+    def from_source(cls, raw: str | None) -> "PropertyType | None":
+        """Map a source's spelling onto the canonical value, or None if unknown."""
+        if not raw:
+            return None
+        key = re.sub(r"[\s\-_]+", "", str(raw).strip().lower())
+        return _PROPERTY_TYPE_BY_KEY.get(key)
+
+
+_PROPERTY_TYPE_BY_KEY = {
+    re.sub(r"[\s\-_]+", "", member.value): member for member in PropertyType
+} | {
+    "twinhouse": PropertyType.TWIN_HOUSE,
+    "twinvilla": PropertyType.TWIN_HOUSE,
+    "standalonevilla": PropertyType.VILLA,
+    "standalone": PropertyType.VILLA,
+    "serviced apartment".replace(" ", ""): PropertyType.APARTMENT,
+    "office": PropertyType.COMMERCIAL,
+    "retail": PropertyType.COMMERCIAL,
+    "clinic": PropertyType.COMMERCIAL,
+    "shop": PropertyType.COMMERCIAL,
+}
+
+
+def canonical_property_type(raw: str | None) -> str | None:
+    """Canonical spelling for one property type.
+
+    Known types map onto the enum's value. Unknown ones are kept in the same
+    shape (lowercase, underscore-separated) rather than dropped — a source's
+    vocabulary is wider than the enum, and losing a real project over an
+    unmapped type is worse than carrying a value the enum doesn't name yet.
+    """
+    if not raw:
+        return None
+    known = PropertyType.from_source(raw)
+    if known is not None:
+        return known.value
+    return re.sub(r"[\s\-]+", "_", str(raw).strip().lower()) or None
+
+
+def normalize_property_types(raw_types: Iterable[str | None]) -> list[str]:
+    """Canonicalise and de-duplicate a source's property-type list."""
+    seen: dict[str, None] = {}
+    for raw in raw_types:
+        canonical = canonical_property_type(raw)
+        if canonical is not None:
+            seen.setdefault(canonical, None)
+    return sorted(seen)
 
 
 class SizeRange(BaseModel):

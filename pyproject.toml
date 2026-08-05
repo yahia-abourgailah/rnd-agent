@@ -27,6 +27,7 @@ dependencies = [
     # chatbot_agent — previously imported but undeclared, so the agent only ran
     # where someone had pip-installed them by hand.
     "langgraph>=0.2",
+    "langgraph-checkpoint-postgres>=2.0",
     "langchain>=0.3",
     "langchain-core>=0.3",
     "langchain-openai>=0.2",

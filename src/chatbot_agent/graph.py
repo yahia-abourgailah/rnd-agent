@@ -8,6 +8,7 @@ ToolMessage for the model to read before it answers. Without that loop the
 bound tools are dead weight — the graph would end on the tool-call message.
 """
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -17,9 +18,13 @@ from chatbot_agent.state import State
 from chatbot_agent.tools.postgres import TOOLS
 
 
-def build_graph() -> CompiledStateGraph:
-    """A function, not a module-level singleton: compiling on import would make
-    every importer pay for it, and tests need a fresh graph per case."""
+def build_graph(checkpointer: BaseCheckpointSaver | None = None) -> CompiledStateGraph:
+    """Compile the agent graph.
+
+    Pass a checkpointer to persist conversation state; without one the graph is
+    single-turn. A function rather than a module-level singleton so compiling
+    never happens at import and tests get a fresh graph per case.
+    """
     builder = StateGraph(State)
     builder.add_node("chatbot", chatbot)
     builder.add_node("tools", ToolNode(TOOLS))
@@ -30,4 +35,4 @@ def build_graph() -> CompiledStateGraph:
     builder.add_conditional_edges("chatbot", tools_condition, {"tools": "tools", END: END})
     builder.add_edge("tools", "chatbot")
 
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)
