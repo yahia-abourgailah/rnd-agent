@@ -48,6 +48,12 @@ def check(case: dict, output: str, tools_called: list[str]) -> list[str]:
     for needle in expect.get("contains", []):
         if _comparable(needle) not in haystack:
             failures.append(f"missing {needle!r}")
+    for alternatives in expect.get("contains_any", []):
+        # One fact, several correct phrasings: "0 projects" and "no projects"
+        # are the same answer, and a case that accepts only one is testing
+        # wording rather than correctness.
+        if not any(_comparable(option) in haystack for option in alternatives):
+            failures.append(f"none of {alternatives!r}")
     for needle in expect.get("not_contains", []):
         if _comparable(needle) in haystack:
             failures.append(f"should not contain {needle!r}")

@@ -793,7 +793,6 @@ git commit -m "Add run evaluation: sanity floor, coverage floor, stop reason"
 **Files:**
 - Create: `src/collect/snapshot.py`
 - Modify: `src/db/repository.py` (add `ON CONFLICT DO NOTHING` to `save_availability`, around line 324)
-- Create: `src/db/migrations/versions/d6e7f8a9b0c1_availability_run_uniqueness.py`
 - Test: `tests/test_collect/test_snapshot.py`
 
 **Interfaces:**
@@ -925,52 +924,13 @@ Expected: PASS (4 passed)
 
 - [ ] **Step 5: Make a retried run idempotent**
 
-Create `src/db/migrations/versions/d6e7f8a9b0c1_availability_run_uniqueness.py`:
+The unique constraint already exists — migration `d6e7f8a9b0c1` added
+`uq_availability_source_project_run` on `(source_id, project_id, snapshot_at)`,
+ordered so the same index also serves per-source history queries. Only the
+insert needs changing.
 
-```python
-"""Unique availability snapshot per project, source and run
-
-A run stamps all its snapshots with one timestamp. Without this constraint a
-retry after a partial crash writes a second set and doubles the observation.
-
-Revision ID: d6e7f8a9b0c1
-Revises: c5d6e7f8a9b0
-"""
-
-from alembic import op
-
-revision = "d6e7f8a9b0c1"
-down_revision = "c5d6e7f8a9b0"
-branch_labels = None
-depends_on = None
-
-
-def upgrade() -> None:
-    op.execute(
-        """
-        DELETE FROM availability a
-        USING availability b
-        WHERE a.ctid > b.ctid
-          AND a.project_id = b.project_id
-          AND a.source_id = b.source_id
-          AND a.snapshot_at = b.snapshot_at
-        """
-    )
-    op.create_unique_constraint(
-        "uq_availability_project_source_run",
-        "availability",
-        ["project_id", "source_id", "snapshot_at"],
-    )
-
-
-def downgrade() -> None:
-    op.drop_constraint(
-        "uq_availability_project_source_run", "availability", type_="unique"
-    )
-```
-
-In `src/db/repository.py`, replace the `session.add(AvailabilityRow(...))` loop
-body in `save_availability` with a Postgres upsert that ignores repeats:
+In `src/db/repository.py`, replace the `session.add(AvailabilityRow(...))` call
+in `save_availability` with a Postgres upsert that ignores repeats:
 
 ```python
             session.execute(
@@ -989,16 +949,15 @@ body in `save_availability` with a Postgres upsert that ignores repeats:
                     delivery_range=snap.delivery_range,
                 )
                 .on_conflict_do_nothing(
-                    index_elements=["project_id", "source_id", "snapshot_at"]
+                    constraint="uq_availability_source_project_run"
                 )
             )
 ```
 
-- [ ] **Step 6: Apply the migration and run the suite**
+- [ ] **Step 6: Run the suite**
 
-Run: `ENV_FILE=.env.dev .venv/bin/python -m alembic upgrade head`
 Run: `ENV_FILE=/dev/null .venv/bin/python -m pytest -q`
-Expected: migration applies; suite passes except the pre-existing `test_extract` failure.
+Expected: suite passes except the pre-existing `test_extract` failure.
 
 - [ ] **Step 7: Commit**
 

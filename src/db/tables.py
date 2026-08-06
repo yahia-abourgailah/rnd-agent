@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
@@ -162,11 +163,16 @@ class Developer(Base):
     # Dedup: when this row is a duplicate of another (e.g. "Sodic" from Property
     # Finder ≡ "SODIC" from Nawy), points at the canonical developer. NULL means
     # this row IS canonical / standalone. Set by dedup/resolver.py.
-    canonical_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("developers.id"))
+    canonical_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("developers.id", ondelete="SET NULL")
+    )
 
     __table_args__ = (
         UniqueConstraint("external_ref", name="uq_developers_ref"),
         Index("ix_developers_canonical_id", "canonical_id"),
+        CheckConstraint(
+            "canonical_id IS NULL OR canonical_id <> id", name="ck_developers_canonical_not_self"
+        ),
     )
 
 
@@ -193,6 +199,9 @@ class Area(Base):
     __table_args__ = (
         UniqueConstraint("external_ref", name="uq_areas_ref"),
         Index("ix_areas_canonical_id", "canonical_id"),
+        CheckConstraint(
+            "canonical_id IS NULL OR canonical_id <> id", name="ck_areas_canonical_not_self"
+        ),
     )
 
 
@@ -229,7 +238,9 @@ class Project(Base):
 
     # Dedup: points at the canonical project when this row is the same real
     # project reported by another source. NULL = canonical / standalone.
-    canonical_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id"))
+    canonical_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("projects.id", ondelete="SET NULL")
+    )
 
     __table_args__ = (
         UniqueConstraint("external_ref", name="uq_projects_ref"),
@@ -238,6 +249,22 @@ class Project(Base):
         Index("ix_projects_is_launch", "is_launch"),
         Index("ix_projects_source_id", "source_id"),
         Index("ix_projects_canonical_id", "canonical_id"),
+        CheckConstraint(
+            "delivery_date IS NULL OR delivery_date ~ '^[0-9]{4}$'",
+            name="ck_projects_delivery_date_is_year",
+        ),
+        CheckConstraint(
+            "min_price IS NULL OR min_price >= 0", name="ck_projects_min_price_non_negative"
+        ),
+        CheckConstraint(
+            "property_types IS NULL OR ("
+            "array_to_string(property_types, ',') = lower(array_to_string(property_types, ',')) "
+            "AND array_to_string(property_types, ',') NOT LIKE '% %')",
+            name="ck_projects_property_types_canonical",
+        ),
+        CheckConstraint(
+            "canonical_id IS NULL OR canonical_id <> id", name="ck_projects_canonical_not_self"
+        ),
     )
 
 
@@ -267,6 +294,14 @@ class Unit(Base):
 
     __table_args__ = (
         UniqueConstraint("external_ref", name="uq_units_ref"),
+        CheckConstraint(
+            "sale_type IS NULL OR sale_type IN ('primary', 'resale')",
+            name="ck_units_sale_type_known",
+        ),
+        CheckConstraint("price IS NULL OR price >= 0", name="ck_units_price_non_negative"),
+        CheckConstraint(
+            "unit_area_sqm IS NULL OR unit_area_sqm >= 0", name="ck_units_area_non_negative"
+        ),
         Index("ix_units_project_id", "project_id"),
         Index("ix_units_source_id", "source_id"),
         Index("ix_units_sale_type", "sale_type"),
@@ -293,4 +328,8 @@ class Availability(Base):
     unit_types: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     delivery_range: Mapped[str | None] = mapped_column(String(64))
 
-    __table_args__ = (Index("ix_availability_project_snapshot", "project_id", "snapshot_at"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "source_id", "project_id", "snapshot_at", name="uq_availability_source_project_run"
+        ),
+    )
