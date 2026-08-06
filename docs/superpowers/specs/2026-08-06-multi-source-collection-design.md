@@ -147,11 +147,15 @@ distinguishable from a genuine empty result.
 **Sanity floor.** Each source declares a minimum expected record count. A run
 landing below it **aborts without writing**:
 
-| Source | Floor | Observed |
+| Source | Floor | Basis |
 |---|---|---|
-| nawy | 1,500 | 1,835 |
-| property_finder | 1,000 | 1,348 |
-| aqarmap | 1,500 | ~1,988 advertised |
+| nawy | 1,500 | 1,835 collected and verified |
+| property_finder | 1,000 | 1,348 advertised by the feed; only 300 collected so far (a `--limit` run), so confirm on the first full run before trusting this floor |
+| aqarmap | 1,500 | ~1,988 advertised; nothing collected yet, so the floor is provisional until the first dry run |
+
+Floors abort a run, so a floor set from an advertised number that turns out to
+be wrong would block collection entirely. Each is confirmed against a real full
+run before its source is scheduled.
 
 This is the `fetch_launch_compound_ids` lesson generalised: an empty fetch that
 writes is worse than a fetch that raises. There, an empty launch set would have
