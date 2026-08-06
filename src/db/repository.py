@@ -324,7 +324,12 @@ def upsert_units(units: list[Unit], project_map: dict[str, uuid.UUID]) -> int:
 def save_availability(
     snapshots: list[Availability], project_map: dict[str, uuid.UUID]
 ) -> int:
-    """Insert availability snapshots (append-only — each is a point in time)."""
+    """Insert availability snapshots (append-only — each is a point in time).
+
+    A run stamps every snapshot with one timestamp, so a retry after a partial
+    crash collides with uq_availability_source_project_run and is ignored rather
+    than doubling the observation.
+    """
     smap = source_id_map()
     saved = 0
     with session_scope() as session:
@@ -332,8 +337,9 @@ def save_availability(
             project_id = project_map.get(external_ref(snap.source, snap.project_source_id))
             if project_id is None:
                 continue
-            session.add(
-                AvailabilityRow(
+            session.execute(
+                insert(AvailabilityRow)
+                .values(
                     project_id=project_id,
                     source_id=smap[snap.source],
                     snapshot_at=snap.snapshot_at,
@@ -346,6 +352,7 @@ def save_availability(
                     unit_types=snap.unit_types,
                     delivery_range=snap.delivery_range,
                 )
+                .on_conflict_do_nothing(constraint="uq_availability_source_project_run")
             )
             saved += 1
     return saved
