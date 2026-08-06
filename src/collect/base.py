@@ -5,14 +5,43 @@ source lands in one vocabulary and downstream code never learns whether a JSON
 API or an HTML parser produced a row.
 """
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from models import Area, Developer, Project, Unit
 
 _ENTITIES = ("developers", "areas", "projects", "units")
 _EMPTY = (None, "", [])
+
+Entity = TypeVar("Entity", Developer, Area, Project, Unit)
+
+
+def merge_by_source_id(entities: Iterable[Entity]) -> list[Entity]:
+    """Collapse repeats of one entity, keeping every non-empty field.
+
+    A source often describes the same developer twice — once from its developer
+    endpoint with a slug and logo, once derived from a compound with only a
+    name. Those are one developer, and a result that reports both makes the
+    sanity floor and field coverage describe a catalogue that does not exist.
+
+    Later non-empty values win, matching the repository's own duplicate merge,
+    so collecting and persisting cannot disagree about which value survives.
+    """
+    merged: dict[str, Entity] = {}
+    for entity in entities:
+        existing = merged.get(entity.source_id)
+        if existing is None:
+            merged[entity.source_id] = entity
+            continue
+        updates = {
+            field: value
+            for field, value in entity.model_dump().items()
+            if value not in _EMPTY
+        }
+        merged[entity.source_id] = existing.model_copy(update=updates)
+    return list(merged.values())
 
 
 @dataclass

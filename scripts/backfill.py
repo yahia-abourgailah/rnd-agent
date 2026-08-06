@@ -21,7 +21,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from backfill import nawy_client as nc, property_finder_client as pf
+from backfill import property_finder_client as pf
+from collect import nawy as nc
 from db import repository as repo
 from watch.adapters.nawy import fetch_primary_units
 from watch.fetcher import Fetcher

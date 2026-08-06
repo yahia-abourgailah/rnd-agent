@@ -19,8 +19,9 @@ exception — see fetch_launch_compound_ids.
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime
+from datetime import UTC, datetime
 
+from collect.base import CollectionResult, merge_by_source_id
 from models import (
     Area,
     Availability,
@@ -38,6 +39,7 @@ from watch.adapters.nawy import (
     UNIT_READY_BY,
     UNIT_TYPE,
     NawyAdapter,
+    fetch_primary_units,
     is_primary,
 )
 from watch.fetcher import Fetcher
@@ -315,3 +317,67 @@ def areas_from_compounds(compounds: list[dict]) -> list[Area]:
                 city=raw.get("parentAreaName"),
             )
     return list(seen.values())
+
+
+class NawyCollector:
+    """Nawy: developers, areas and compounds from the entity endpoints, plus
+    primary units from the web API.
+
+    `units_scope="launches"` fetches units only for compounds on the
+    new-launches page — one request each. `"all"` takes one catalogue-wide scan
+    instead, which is far cheaper than 1,800 per-compound requests.
+    """
+
+    name = SOURCE
+    min_projects = 1500
+
+    def __init__(
+        self, fetcher: Fetcher, units_scope: str = "all", limit: int | None = None
+    ):
+        self.fetcher = fetcher
+        self.units_scope = units_scope
+        self.limit = limit
+
+    async def collect(self) -> CollectionResult:
+        launch_ids = await fetch_launch_compound_ids(self.fetcher)
+
+        developer_raw = await fetch_developers(self.fetcher)
+        area_raw = await fetch_areas(self.fetcher)
+        compound_raw = await fetch_compounds(self.fetcher, self.limit)
+
+        projects = [p for p in (map_compound(c, launch_ids) for c in compound_raw) if p]
+        developers = merge_by_source_id(
+            [d for d in (map_developer(d) for d in developer_raw) if d]
+            + developers_from_compounds(compound_raw)
+        )
+        areas = merge_by_source_id(
+            [a for a in (map_area(a) for a in area_raw) if a]
+            + areas_from_compounds(compound_raw)
+        )
+
+        units = [u for u in (map_unit(u) for u in await self._unit_payloads(projects)) if u]
+
+        return CollectionResult(
+            source=self.name,
+            developers=developers,
+            areas=areas,
+            projects=projects,
+            units=units,
+            fetched_at=datetime.now(UTC),
+        )
+
+    async def _unit_payloads(self, projects: list[Project]) -> list[dict]:
+        loaded = {int(p.source_id) for p in projects}
+        if self.units_scope == "all":
+            everything = await fetch_primary_units(self.fetcher)
+            return [u for u in everything if (u.get("compound") or {}).get("id") in loaded]
+
+        payloads: list[dict] = []
+        for project in projects:
+            if project.is_launch:
+                payloads.extend(
+                    await fetch_primary_units(
+                        self.fetcher, compound_id=int(project.source_id)
+                    )
+                )
+        return payloads

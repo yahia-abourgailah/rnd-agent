@@ -11,7 +11,7 @@ import pathlib
 
 import pytest
 
-from backfill import nawy_client as nc
+from collect import nawy as nc
 from models import SaleType
 from watch.adapters.nawy import is_primary
 
