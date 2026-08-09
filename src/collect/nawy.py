@@ -330,6 +330,7 @@ class NawyCollector:
 
     name = SOURCE
     min_projects = 1500
+    rate_limit_seconds = 3
 
     def __init__(
         self, fetcher: Fetcher, units_scope: str = "all", limit: int | None = None

@@ -54,8 +54,8 @@ rules hold throughout:
 | **Extract** | ✅ | ScrapeGraphAI + company `gemma-4`; Arabic/English; many launches per page |
 | **Store** | ✅ | Postgres: `launches`, `raw_content`, `fetch_log` (Alembic-managed) |
 | **Relational model** | ✅ | `sources`, `developers`, `areas`, `projects`, `units`, `availability` — connected by FKs (Alembic-managed). See §5. |
-| **Backfill (Nawy)** | ✅ | `scripts/backfill.py --source nawy` — full catalogue into the relational tables. |
-| **Backfill (Property Finder)** | ✅ | `scripts/backfill.py --source property_finder` — 2nd live source (1,341 projects). See §5a. |
+| **Backfill (Nawy)** | ✅ | `scripts/collect.py --source nawy` — full catalogue into the relational tables. |
+| **Backfill (Property Finder)** | ✅ | `scripts/collect.py --source property_finder` — 2nd live source (1,341 projects). See §5a. |
 | **Cross-source dedup** | ✅ | `scripts/dedup.py` — matches the same developer/project across sources, links via `canonical_id`. See §5b. |
 | **Insights API** | ✅ | 8 read endpoints (FastAPI) over the catalogue + CORS + API-key auth. See §6. |
 | Infra | ✅ | Docker (Postgres+pgvector, Redis), 3 environments (dev/staging/prod), GitHub |
@@ -183,7 +183,7 @@ linked cleanly.
   market). ✅
 - **Enrich units:** **launches deep, market wide** — per-unit rows for the 24
   live launches; headline facts (developer, area, price, types) for all 1,830.
-  Run `scripts/backfill.py --units all` to deep-enrich every project (~1,800 API
+  Run `scripts/collect.py --source nawy` to load every project and its units (~1,800 API
   calls, slow) when needed.
 - **Shared-contract change:** the flat `launches` model was kept intact
   (additive `project_id` link), so the teammate's dedup work isn't broken — all
@@ -191,9 +191,9 @@ linked cleanly.
 
 ### Run it
 ```bash
-python scripts/backfill.py                      # Nawy: developers/areas/projects, units for launches
-python scripts/backfill.py --units all          # + per-unit rows for every project (slow)
-python scripts/backfill.py --source property_finder   # Property Finder (2nd source)
+python scripts/collect.py --source nawy --dry-run   # fetch, map, report; write nothing
+python scripts/collect.py --source nawy         # full catalogue incl. per-unit rows
+python scripts/collect.py --source property_finder   # Property Finder (2nd source)
 python scripts/dedup.py                         # link cross-source duplicates (run AFTER backfills)
 ```
 
@@ -201,7 +201,7 @@ python scripts/dedup.py                         # link cross-source duplicates (
 
 ## 5a. Second source: Property Finder — ✅ BUILT
 
-`src/backfill/property_finder_client.py`. Same pattern as Nawy:
+`src/collect/property_finder.py`. Same pattern as Nawy:
 reads `__NEXT_DATA__` from `propertyfinder.eg/en/new-projects` (paginated, ~56
 pages, 1,341 projects), maps to our models, no LLM. Developers and areas are
 **derived from the projects** (PF has no standalone feeds); areas are grouped at
@@ -283,8 +283,8 @@ del .crawl_state.json                    # force re-run (change detection is per
 python scripts\run_source.py --source nawy
 
 # 5b. Relational backfill → developers/areas/projects/units/availability
-python scripts\backfill.py                        # Nawy; ~2 min; re-runnable
-python scripts\backfill.py --source property_finder   # Property Finder (2nd source)
+python scripts\collect.py --source nawy           # Nawy; ~4 min; re-runnable
+python scripts\collect.py --source property_finder   # Property Finder (2nd source)
 
 # 5c. Cross-source dedup (run AFTER both backfills)
 python scripts\dedup.py
@@ -324,14 +324,14 @@ src/                import root (on PYTHONPATH; packages below are top-level: `f
   models/          shared contract: Launch, SourceConfig, RawPage, Candidate + relational: Developer, Area, Project, Unit, Availability
   watch/           fetcher, change_detector, base adapter, adapters/ (nawy real; others stubs)
   extract/         extractor (ScrapeGraphAI), prompts, normalize
-  backfill/        nawy_client.py, property_finder_client.py — fetch + map source endpoints → models (no LLM)
+  collect/         nawy.py, property_finder.py — fetch + map source endpoints → models (no LLM), behind one SourceCollector protocol
   dedup/           normalize.py, matcher.py (RapidFuzz), resolver.py — cross-source dedup (WORKS)
   db/              engine, tables (flat + relational), repository (upserts + dedup writes), migrations/ (Alembic)
   metrics/         quality.py — duplicate rate / coverage / completeness (lead_time.py still stub)
   api/             main.py, security.py (API key), dependencies.py, schemas.py, routes/ (insights, monitoring, health; launches/feedback stubs)
   pipeline/        flows.py (thin), tasks.py (the steps)
   notify/ feedback/   ← stubs, TODO markers
-scripts/           run_source.py, backfill.py (--source nawy|property_finder), dedup.py — all WORK; seed_sources.py stub
+scripts/           run_source.py, collect.py (--source nawy|property_finder, --dry-run), dedup.py — all WORK; seed_sources.py stub
 tests/             mirrors src/; 53 tests; fixtures/live/ has real saved HTML + nawy_*.json + property finder samples
 docs/              this file + DASHBOARD_API.md (frontend handoff reference)
 ```

@@ -196,6 +196,7 @@ class PropertyFinderCollector:
 
     name = SOURCE
     min_projects = 1000
+    rate_limit_seconds = 2
 
     def __init__(self, fetcher: Fetcher, limit: int | None = None):
         self.fetcher = fetcher

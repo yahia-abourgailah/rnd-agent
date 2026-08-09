@@ -80,5 +80,8 @@ class SourceCollector(Protocol):
 
     name: str
     min_projects: int
+    #: Seconds between requests to one host. Owned by the source because the
+    #: right rate depends on how the source is fetched, not on the caller.
+    rate_limit_seconds: float
 
     async def collect(self) -> CollectionResult: ...
