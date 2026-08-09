@@ -66,9 +66,10 @@ class Fetcher:
         rate_limit_seconds: float | None = None,
     ):
         self.timeout_seconds = timeout_seconds or settings.default_request_timeout_seconds
-        self._rate_limiter = _PerHostRateLimiter(
+        self.rate_limit_seconds = (
             rate_limit_seconds or settings.default_rate_limit_per_host_seconds
         )
+        self._rate_limiter = _PerHostRateLimiter(self.rate_limit_seconds)
 
     @_retrying()
     async def fetch_json(self, url: str, **httpx_kwargs) -> RawPage:

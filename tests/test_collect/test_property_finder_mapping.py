@@ -10,7 +10,7 @@ import pathlib
 
 import pytest
 
-from backfill import property_finder_client as pf
+from collect import property_finder as pf
 
 FIXTURE = (
     pathlib.Path(__file__).resolve().parents[1]

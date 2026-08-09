@@ -7,7 +7,7 @@ import pathlib
 
 import pytest
 
-from backfill import nawy_client as nc
+from collect import nawy as nc
 
 FIXTURES = pathlib.Path(__file__).resolve().parents[1] / "fixtures" / "live"
 

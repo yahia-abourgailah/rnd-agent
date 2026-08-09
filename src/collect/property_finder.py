@@ -18,7 +18,9 @@ Fails safe: a shape change yields no records rather than a crash.
 import json
 import logging
 import re
+from datetime import UTC, datetime
 
+from collect.base import CollectionResult, merge_by_source_id
 from models import (
     Area,
     Developer,
@@ -186,3 +188,28 @@ def areas_from_projects(raws: list[dict]) -> list[Area]:
                 city=city if city and city != district else None,
             )
     return list(seen.values())
+
+
+class PropertyFinderCollector:
+    """Property Finder: developers and areas are derived from the projects,
+    which is all the new-projects listing exposes."""
+
+    name = SOURCE
+    min_projects = 1000
+    rate_limit_seconds = 2
+
+    def __init__(self, fetcher: Fetcher, limit: int | None = None):
+        self.fetcher = fetcher
+        self.limit = limit
+
+    async def collect(self) -> CollectionResult:
+        raws = await fetch_projects(self.fetcher, self.limit)
+
+        return CollectionResult(
+            source=self.name,
+            developers=merge_by_source_id(developers_from_projects(raws)),
+            areas=merge_by_source_id(areas_from_projects(raws)),
+            projects=merge_by_source_id(p for p in (map_project(r) for r in raws) if p),
+            units=[],
+            fetched_at=datetime.now(UTC),
+        )

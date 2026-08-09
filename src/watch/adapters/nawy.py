@@ -49,7 +49,7 @@ MAX_PAGES = 60  # safety stop so a pagination bug can't crawl forever
 _PRIMARY_ONLY_FILTER = {"resale": {"value": False}}
 
 #: Unit record field names on the web API, named once so the mapper in
-#: backfill/nawy_client.py and the aggregation here cannot drift apart.
+#: collect/nawy.py and the aggregation here cannot drift apart.
 UNIT_AREA = "min_unit_area"
 UNIT_TYPE = "property_type"
 UNIT_READY_BY = "min_ready_by"
