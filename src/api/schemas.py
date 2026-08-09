@@ -120,10 +120,22 @@ class CompletenessStat(BaseModel):
     with_delivery_date_pct: float
 
 
+class SourceOverlapRow(BaseModel):
+    """How much of a source's catalogue another source also reports. Both sides
+    of a duplicate pair count, so the source that wins canonical does not look
+    as though it contributes everything alone."""
+
+    source: str
+    projects: int
+    shared: int
+    unique: int
+
+
 class QualityResponse(BaseModel):
     developers: DuplicateStat
     projects: DuplicateStat
     source_coverage: list[SourceCoverageRow]
+    source_overlap: list[SourceOverlapRow]
     completeness: CompletenessStat
     note: str
 

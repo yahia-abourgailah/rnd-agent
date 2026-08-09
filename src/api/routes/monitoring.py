@@ -20,6 +20,7 @@ def data_quality(session: Session = Depends(get_session)) -> QualityResponse:
         developers=dups["developers"],
         projects=dups["projects"],
         source_coverage=quality.source_coverage(session),
+        source_overlap=quality.source_overlap(session),
         completeness=quality.completeness(session),
         note="Precision/recall require a labelled eval set (task not yet done).",
     )
