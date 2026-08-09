@@ -41,3 +41,15 @@ crawl:
 # TODO(phase-later): wire real Alembic migrations once db/tables.py is implemented.
 migrate:
 	alembic upgrade head
+
+# Collect one source into the catalogue. SOURCE=nawy|property_finder
+collect:
+	python scripts/collect.py --source $(SOURCE)
+
+# Fetch and map for real, report what would be written, write nothing.
+collect-dry:
+	python scripts/collect.py --source $(SOURCE) --dry-run
+
+# Link the same developer/project/area across sources.
+dedup:
+	python scripts/dedup.py
