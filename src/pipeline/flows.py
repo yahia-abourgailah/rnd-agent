@@ -8,6 +8,8 @@ from collect.registry import get_collector_class
 from collect.report import RunReport, StopReason, evaluate
 from collect.snapshot import snapshots_for
 from db import repository as repo
+from dedup import matcher, resolver
+from dedup.normalize import normalize_area_name
 from pipeline.tasks import (
     extract_candidates,
     fetch_source_pages,
@@ -119,3 +121,44 @@ async def collect_source(
         "collect source=%s stop_reason=complete counts=%s", source_name, report.counts
     )
     return report
+
+
+@flow(name="dedup-catalogue")
+def dedup_catalogue(threshold: int = matcher.DEFAULT_THRESHOLD) -> dict[str, int]:
+    """Link the same developer, project and area across sources.
+
+    Runs after collection, never inside it: a source run rewrites
+    projects.developer_id from that source's own developer, which undoes the
+    remapping onto canonical developers. Collection that is not followed by
+    dedup leaves the catalogue counting one company as several, and the API
+    keeps answering — with wrong numbers.
+    """
+    developers = repo.all_developers()
+    developer_map = resolver.resolve(
+        matcher.cluster_entities(developers, threshold=threshold), developers
+    )
+    repo.set_developer_canonicals(developer_map)
+    repointed = repo.remap_projects_to_canonical_developers()
+
+    projects = repo.all_projects_for_dedup()
+    project_map = resolver.resolve(
+        matcher.cluster_entities(projects, threshold=threshold, block_key="developer_id"),
+        projects,
+    )
+    repo.set_project_canonicals(project_map)
+
+    areas = repo.all_areas_for_dedup()
+    area_map = resolver.resolve(
+        matcher.cluster_entities(areas, threshold=threshold, normalizer=normalize_area_name),
+        areas,
+    )
+    repo.set_area_canonicals(area_map)
+
+    merged = {
+        "developers_merged": len(developer_map),
+        "projects_merged": len(project_map),
+        "areas_merged": len(area_map),
+        "projects_repointed": repointed,
+    }
+    logger.info("dedup %s", merged)
+    return merged

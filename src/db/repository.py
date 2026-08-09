@@ -223,6 +223,28 @@ def upsert_areas(areas: list[Area]) -> dict[str, uuid.UUID]:
     )
 
 
+def through_canonical(entity_id, canonical_by_id: dict):
+    """Resolve a duplicate's id onto its canonical row, one hop.
+
+    Applied when writing foreign keys so collection preserves dedup instead of
+    reversing it. One hop is deliberate: the matcher's union-find always points
+    at a root, and following a chain would hide a bug rather than surface it.
+    """
+    return canonical_by_id.get(entity_id, entity_id)
+
+
+def canonical_developer_map() -> dict:
+    """{duplicate developer id -> canonical developer id}."""
+    with session_scope() as session:
+        return dict(
+            session.execute(
+                select(DeveloperRow.id, DeveloperRow.canonical_id).where(
+                    DeveloperRow.canonical_id.isnot(None)
+                )
+            ).all()
+        )
+
+
 def upsert_projects(
     projects: list[Project],
     dev_map: dict[str, uuid.UUID],
@@ -230,13 +252,17 @@ def upsert_projects(
 ) -> dict[str, uuid.UUID]:
     now = datetime.now(UTC)
     smap = source_id_map()
+    canonical_developers = canonical_developer_map()
     rows = [
         {
             "source_id": smap[p.source],
             "external_ref": external_ref(p.source, p.source_id),
             "name": p.name,
             "slug": p.slug,
-            "developer_id": dev_map.get(external_ref(p.source, p.developer_source_id))
+            "developer_id": through_canonical(
+                dev_map.get(external_ref(p.source, p.developer_source_id)),
+                canonical_developers,
+            )
             if p.developer_source_id
             else None,
             "area_id": area_map.get(external_ref(p.source, p.area_source_id))
