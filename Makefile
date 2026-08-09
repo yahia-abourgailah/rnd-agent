@@ -10,8 +10,15 @@ dev:
 	playwright install chromium
 
 # --- Local dev stack (exposes ports on localhost) ---
+# API on :8000 (Swagger at /docs), Postgres and Redis alongside it.
+# Override a port when something already holds it, e.g.
+#   make up API_HOST_PORT=8080 POSTGRES_HOST_PORT=55432
 up:
-	docker compose up -d
+	docker compose up -d --build
+
+# Apply migrations inside the stack, against the containerised database.
+migrate-docker:
+	docker compose run --rm api alembic upgrade head
 
 down:
 	docker compose down
