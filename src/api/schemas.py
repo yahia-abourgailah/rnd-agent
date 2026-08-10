@@ -182,3 +182,56 @@ class LaunchesResponse(BaseModel):
     snapshot_runs_in_window: int
     total: int
     results: list[LaunchEventRow]
+
+
+class ProjectRow(BaseModel):
+    project_id: str
+    name: str
+    developer: str | None
+    zone: str | None
+    source: str
+    min_price: float | None
+    currency: str | None
+    property_types: list[str]
+    is_launch: bool
+    delivery_date: str | None
+    first_seen_at: datetime
+
+
+class ProjectsResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    results: list[ProjectRow]
+
+
+class UnitSummaryOut(BaseModel):
+    count: int
+    min_price: float | None
+    max_price: float | None
+    price_per_sqm_min: float | None
+    price_per_sqm_max: float | None
+    bedrooms: dict[int, int]
+    property_types: dict[str, int]
+    finishing: dict[str, int]
+
+
+class PriceSnapshot(BaseModel):
+    snapshot_at: datetime
+    min_price: float | None
+    max_price: float | None
+    total_units: int | None
+
+
+class ProjectDetail(BaseModel):
+    project: ProjectRow
+    #: Set when the requested id was a duplicate; the project above is the
+    #: canonical row it resolves to, so a link built from any source lands
+    #: somewhere useful instead of 404ing.
+    requested_id: str | None = None
+    #: Which sources contribute unit rows. Empty means no source does, which is
+    #: different from a project having no units.
+    units_available_from: list[str]
+    units: UnitSummaryOut
+    price_history: list[PriceSnapshot]
+    also_listed_on: list[str]

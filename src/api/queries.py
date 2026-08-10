@@ -46,13 +46,30 @@ def join_areas(stmt):
     )
 
 
-def scoped(stmt, source: str | None, zone: str | None, dedup: bool = True):
+def zone_filter(zone: str):
+    """Match a zone by its canonical name, or by the spelling a caller happens
+    to hold, so an older name finds rows rather than an empty result."""
+    return or_(
+        func.lower(canonical_area_name()) == zone.lower(),
+        func.lower(Area.name) == zone.lower(),
+    )
+
+
+def scoped(
+    stmt,
+    source: str | None,
+    zone: str | None,
+    dedup: bool = True,
+    areas_joined: bool = False,
+):
     """Apply the shared dedup, source and zone filters to a Project query.
 
     `dedup=True` counts only canonical projects, so cross-source duplicates are
-    not double-counted. A zone matches on the canonical name, and also on the
-    area's own name so a caller holding an older spelling still finds rows
-    rather than an empty result.
+    not double-counted.
+
+    `areas_joined` must be True when the caller has already joined the area and
+    its canonical — joining twice raises "table name areas specified more than
+    once", and the caller is the only one that knows.
     """
     if dedup:
         stmt = stmt.where(Project.canonical_id.is_(None))
@@ -61,10 +78,7 @@ def scoped(stmt, source: str | None, zone: str | None, dedup: bool = True):
             Source.name == source
         )
     if zone:
-        stmt = join_areas(stmt).where(
-            or_(
-                func.lower(canonical_area_name()) == zone.lower(),
-                func.lower(Area.name) == zone.lower(),
-            )
-        )
+        if not areas_joined:
+            stmt = join_areas(stmt)
+        stmt = stmt.where(zone_filter(zone))
     return stmt

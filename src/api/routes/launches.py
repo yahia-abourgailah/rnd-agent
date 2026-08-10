@@ -59,7 +59,7 @@ def launches(
         stmt = join_areas(stmt).outerjoin(
             Developer, Developer.id == Project.developer_id
         )
-        return scoped(stmt, source, zone).join(
+        return scoped(stmt, source, zone, areas_joined=True).join(
             Source, Source.id == Project.source_id, isouter=True
         )
 
