@@ -6,6 +6,7 @@ from sqlalchemy import Float, case, cast, func, select
 from sqlalchemy.orm import Session
 
 from api.dependencies import get_session
+from api.queries import canonical_area_city, canonical_area_name, join_areas, scoped as _scoped
 from api.schemas import (
     DeliveryPipelineResponse,
     DeliveryYearRow,
@@ -22,31 +23,13 @@ from api.schemas import (
     ZoneRow,
     ZonesResponse,
 )
-from db.tables import Area, Developer, Project, Source
+from db.tables import Developer, Project
 
 
 def _round(value: float | None) -> float | None:
     return round(value) if value is not None else None
 
 router = APIRouter(prefix="/insights", tags=["insights"])
-
-
-def _scoped(stmt, source: str | None, zone: str | None, dedup: bool = True):
-    """Apply optional dedup/source/zone filters to any Project-based query, so
-    every aggregate in an endpoint shares the exact same scope.
-
-    dedup=True counts only canonical projects (canonical_id IS NULL) — the
-    unique deduped market — so cross-source duplicates aren't double-counted.
-    """
-    if dedup:
-        stmt = stmt.where(Project.canonical_id.is_(None))
-    if source:
-        stmt = stmt.join(Source, Source.id == Project.source_id).where(Source.name == source)
-    if zone:
-        stmt = stmt.join(Area, Area.id == Project.area_id).where(
-            func.lower(Area.name) == zone.lower()
-        )
-    return stmt
 
 
 @router.get("/market-share", response_model=MarketShareResponse)
@@ -110,18 +93,21 @@ def zones(
     launches, and the price range. Reveals hotspots vs. open zones at a glance."""
     median = func.percentile_cont(0.5).within_group(Project.min_price.asc())
     stmt = _scoped(
-        select(
-            Area.name,
-            Area.city,
-            func.count(Project.id).label("projects"),
-            func.count(func.distinct(Project.developer_id)).label("developers"),
-            func.count(Project.id).filter(Project.is_launch.is_(True)).label("launches"),
-            func.min(Project.min_price),
-            median,
-            func.max(Project.min_price),
+        join_areas(
+            select(
+                canonical_area_name().label("zone"),
+                canonical_area_city().label("city"),
+                func.count(Project.id).label("projects"),
+                func.count(func.distinct(Project.developer_id)).label("developers"),
+                func.count(Project.id)
+                .filter(Project.is_launch.is_(True))
+                .label("launches"),
+                func.min(Project.min_price),
+                median,
+                func.max(Project.min_price),
+            ).select_from(Project)
         )
-        .join(Project, Project.area_id == Area.id)
-        .group_by(Area.id, Area.name, Area.city)
+        .group_by(canonical_area_name(), canonical_area_city())
         .order_by(func.count(Project.id).desc()),
         source,
         None,
@@ -245,15 +231,16 @@ def whitespace(
     signal (absorption velocity), which arrives once snapshot history exists."""
     median = func.percentile_cont(0.5).within_group(Project.min_price.asc())
     stmt = _scoped(
-        select(
-            Area.name,
-            Area.city,
-            func.count(Project.id).label("projects"),
-            func.count(func.distinct(Project.developer_id)).label("developers"),
-            median.label("median_price"),
+        join_areas(
+            select(
+                canonical_area_name().label("zone"),
+                canonical_area_city().label("city"),
+                func.count(Project.id).label("projects"),
+                func.count(func.distinct(Project.developer_id)).label("developers"),
+                median.label("median_price"),
+            ).select_from(Project)
         )
-        .join(Project, Project.area_id == Area.id)
-        .group_by(Area.id, Area.name, Area.city)
+        .group_by(canonical_area_name(), canonical_area_city())
         .having(func.count(Project.id) >= min_projects),
         source,
         None,
