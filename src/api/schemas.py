@@ -1,5 +1,6 @@
 """Request/response models for the read/insights API (the shapes the CRM consumes)."""
 
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints
@@ -154,3 +155,30 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     conversation_id: str
+
+
+class LaunchEventRow(BaseModel):
+    """One thing that changed. `kind` decides which optional fields are set."""
+
+    kind: str
+    project_id: str
+    name: str
+    developer: str | None
+    zone: str | None
+    source: str
+    occurred_at: datetime
+    min_price: float | None = None
+    from_price: float | None = None
+    to_price: float | None = None
+    change_pct: float | None = None
+
+
+class LaunchesResponse(BaseModel):
+    since: datetime
+    min_change_pct: float
+    #: How many collection runs the window covers. Price movement needs at
+    #: least two, so this tells a caller whether an empty feed means "nothing
+    #: moved" or "not enough history yet".
+    snapshot_runs_in_window: int
+    total: int
+    results: list[LaunchEventRow]
