@@ -4,6 +4,11 @@ The R&D competitive-intelligence data, served as read-only JSON endpoints. The
 full-stack team builds the CRM dashboard (React/Next.js) with charts against
 these — **we own the data + API, you own the screens.**
 
+> Integrating for the first time? Start with
+> [`FRONTEND_INTEGRATION.md`](FRONTEND_INTEGRATION.md) — where the API key
+> lives, TypeScript types, error handling, and per-screen recipes. This file is
+> the endpoint-by-endpoint reference to come back to.
+
 ## Running it
 
 ```bash
