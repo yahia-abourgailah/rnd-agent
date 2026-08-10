@@ -12,7 +12,7 @@ SQLite cannot host, and the suite must run with no database.
 from sqlalchemy import func, select
 
 from api.queries import canonical_area_name, scoped
-from db.tables import Project
+from db.tables import Project, Source
 
 
 def _sql(stmt) -> str:
@@ -62,6 +62,20 @@ def test_a_source_filter_narrows_to_that_source():
     sql = _sql(scoped(select(Project.id), source="nawy", zone=None))
 
     assert "sources" in sql
+    assert "nawy" in sql
+
+
+def test_a_source_filter_composes_with_a_caller_that_already_joined_sources():
+    """/projects and /launches select the source name, so they join sources
+    themselves. A second join here made every source-filtered request 500 with
+    "table name sources specified more than once"."""
+    already_joined = select(Project.id, Source.name).join(
+        Source, Source.id == Project.source_id
+    )
+
+    sql = _sql(scoped(already_joined, source="nawy", zone=None))
+
+    assert sql.count("join sources") == 1
     assert "nawy" in sql
 
 

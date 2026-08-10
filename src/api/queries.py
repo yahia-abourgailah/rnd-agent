@@ -4,7 +4,7 @@ One definition of "the deduped market" and one definition of "a zone", so two
 endpoints cannot drift into disagreeing about what they mean.
 """
 
-from sqlalchemy import case, func, or_
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import aliased
 
 from db.tables import Area, Project, Source
@@ -67,15 +67,20 @@ def scoped(
     `dedup=True` counts only canonical projects, so cross-source duplicates are
     not double-counted.
 
+    The source filter is a subquery rather than a join so that it composes with
+    a caller that already selects the source name; joining twice raises "table
+    name sources specified more than once".
+
     `areas_joined` must be True when the caller has already joined the area and
-    its canonical — joining twice raises "table name areas specified more than
-    once", and the caller is the only one that knows.
+    its canonical — the zone filter needs those columns, so it cannot avoid the
+    join the way the source filter does, and the caller is the only one that
+    knows.
     """
     if dedup:
         stmt = stmt.where(Project.canonical_id.is_(None))
     if source:
-        stmt = stmt.join(Source, Source.id == Project.source_id).where(
-            Source.name == source
+        stmt = stmt.where(
+            Project.source_id.in_(select(Source.id).where(Source.name == source))
         )
     if zone:
         if not areas_joined:
