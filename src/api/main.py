@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import chat, feedback, health, insights, launches, monitoring
+from api.routes import chat, feedback, health, insights, launches, monitoring, projects
 from api.security import require_api_key
 from chatbot_agent.checkpointer import conversation_checkpointer
 from chatbot_agent.graph import build_graph
@@ -53,3 +53,4 @@ app.include_router(feedback.router, dependencies=_auth)
 app.include_router(insights.router, dependencies=_auth)
 app.include_router(monitoring.router, dependencies=_auth)
 app.include_router(chat.router, dependencies=_auth)
+app.include_router(projects.router, dependencies=_auth)

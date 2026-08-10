@@ -1,5 +1,6 @@
 """Request/response models for the read/insights API (the shapes the CRM consumes)."""
 
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints
@@ -154,3 +155,83 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     conversation_id: str
+
+
+class LaunchEventRow(BaseModel):
+    """One thing that changed. `kind` decides which optional fields are set."""
+
+    kind: str
+    project_id: str
+    name: str
+    developer: str | None
+    zone: str | None
+    source: str
+    occurred_at: datetime
+    min_price: float | None = None
+    from_price: float | None = None
+    to_price: float | None = None
+    change_pct: float | None = None
+
+
+class LaunchesResponse(BaseModel):
+    since: datetime
+    min_change_pct: float
+    #: How many collection runs the window covers. Price movement needs at
+    #: least two, so this tells a caller whether an empty feed means "nothing
+    #: moved" or "not enough history yet".
+    snapshot_runs_in_window: int
+    total: int
+    results: list[LaunchEventRow]
+
+
+class ProjectRow(BaseModel):
+    project_id: str
+    name: str
+    developer: str | None
+    zone: str | None
+    source: str
+    min_price: float | None
+    currency: str | None
+    property_types: list[str]
+    is_launch: bool
+    delivery_date: str | None
+    first_seen_at: datetime
+
+
+class ProjectsResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    results: list[ProjectRow]
+
+
+class UnitSummaryOut(BaseModel):
+    count: int
+    min_price: float | None
+    max_price: float | None
+    price_per_sqm_min: float | None
+    price_per_sqm_max: float | None
+    bedrooms: dict[int, int]
+    property_types: dict[str, int]
+    finishing: dict[str, int]
+
+
+class PriceSnapshot(BaseModel):
+    snapshot_at: datetime
+    min_price: float | None
+    max_price: float | None
+    total_units: int | None
+
+
+class ProjectDetail(BaseModel):
+    project: ProjectRow
+    #: Set when the requested id was a duplicate; the project above is the
+    #: canonical row it resolves to, so a link built from any source lands
+    #: somewhere useful instead of 404ing.
+    requested_id: str | None = None
+    #: Which sources contribute unit rows. Empty means no source does, which is
+    #: different from a project having no units.
+    units_available_from: list[str]
+    units: UnitSummaryOut
+    price_history: list[PriceSnapshot]
+    also_listed_on: list[str]
