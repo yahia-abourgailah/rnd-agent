@@ -7,6 +7,10 @@
 #
 # Credentials default to dev values but can be overridden from the shell env
 # (or an --env-file) so staging/prod supply their own without editing this file.
+#
+# Every environment reads a single `.env` at the repo root — Compose's own
+# default file, so it feeds both the ${VAR} substitutions below and the api
+# container's environment. Copy .env.example to .env; it is never committed.
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -44,9 +48,12 @@ services:
       REDIS_URL: redis://redis:6379/0
       ENV_FILE: ""
     # Supplies LLM_BASE_URL, OPENAI_API_KEY and API_KEY without committing them.
+    # Required on purpose: with it optional, a host missing the file started a
+    # container with no API key (auth silently disabled) and no LLM_BASE_URL
+    # (chat silently calling api.openai.com). Failing to start is the safer
+    # outcome. Copy .env.example to .env and fill it in.
     env_file:
-      - path: .env.dev
-        required: false
+      - .env
     depends_on:
       postgres:
         condition: service_healthy

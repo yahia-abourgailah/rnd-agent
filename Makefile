@@ -1,8 +1,9 @@
 .PHONY: dev test crawl migrate lint fmt up down up-prod down-prod
 
-# ENV_FILE selects which .env the app loads (dev by default). Override per env:
+# ENV_FILE selects which .env the app loads for host-side runs. The same `.env`
+# Docker Compose reads, so both paths see one set of values. Override per env:
 #   make crawl ENV_FILE=.env.staging
-ENV_FILE ?= .env.dev
+ENV_FILE ?= .env
 export ENV_FILE
 
 dev:

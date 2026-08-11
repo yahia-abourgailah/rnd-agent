@@ -68,27 +68,25 @@ changes. Two things pick the environment:
 
 | Concern        | dev                          | staging                      | production                       |
 |----------------|------------------------------|------------------------------|----------------------------------|
-| Env file       | `.env.dev`                   | `.env.staging`               | injected env vars (secret store) |
+| Env file       | `.env`                       | `.env` (staging's own values) | `.env` / injected env vars      |
 | Postgres/Redis | local docker-compose         | staging's own                | prod's own / managed             |
 | Sources        | `sources.development.yaml` (1 demo) | (falls back to prod list) | `sources.production.yaml`   |
 | LLM model      | `openai/gpt-4o-mini`         | `openai/gpt-4o`              | `openai/gpt-4o`                  |
 | Slack channel  | `#launch-alerts-dev`         | `#launch-alerts-staging`     | `#launch-alerts` (real)          |
 
-Templates for each are committed as `.env.dev.example`,
-`.env.staging.example`, `.env.production.example`. Copy the one you need,
-drop the `.example`, fill it in. **Real `.env*` files are gitignored** — only
-the `*.example` templates are tracked. In staging/prod, prefer injecting
-secrets as real environment variables from a secret manager rather than a
-file on disk.
+**Every host has exactly one `.env` at the repo root**, whatever the
+environment — Docker Compose reads that name automatically and will not start
+without it. Copy the template that matches the host and fill it in. Real
+`.env*` files are gitignored; only the `*.example` templates are tracked. In
+staging/prod, prefer injecting secrets as real environment variables from a
+secret manager rather than a file on disk.
 
 ```bash
-# dev (default)
-cp .env.dev.example .env.dev
+# any host
+cp .env.example .env         # or .env.staging.example / .env.production.example
 make up                      # local postgres+redis
 make crawl SOURCE=generic_developer_demo
 
-# staging / prod point ENV_FILE at the right file (or set real env vars)
-make crawl ENV_FILE=.env.staging SOURCE=...
 make up-prod                 # base + docker-compose.prod.yml overlay
 ```
 

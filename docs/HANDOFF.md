@@ -64,12 +64,12 @@ python3.12 -m venv .venv && source .venv/bin/activate   # see task 4.1 re: 3.12
 pip install -e ".[dev]"
 playwright install chromium
 
-cp .env.dev.example .env.dev        # then fill in the values below
+cp .env.example .env                # then fill in the values below
 docker compose up -d                # postgres (pgvector) + redis
 alembic upgrade head                # migrations; head is e1f2a3b4c5d6
 ```
 
-Values you must set in `.env.dev`:
+Values you must set in `.env`:
 
 | Variable | What it is |
 |---|---|
@@ -79,8 +79,9 @@ Values you must set in `.env.dev`:
 | `OPENAI_API_KEY` | key for that endpoint (may be a placeholder) |
 | `API_KEY` | shared secret the dashboard sends as `X-API-Key` |
 
-`ENV_FILE` selects which `.env` is loaded (default `.env`); the Makefile passes
-`.env.dev`. Never commit a real `.env` — only `*.example` templates are tracked.
+`ENV_FILE` selects which file host-side runs load; it and Docker Compose both
+default to `.env`. Never commit a real `.env` — only `*.example` templates are
+tracked, so a new host needs its own copy before anything will start.
 
 ### Check it works
 
