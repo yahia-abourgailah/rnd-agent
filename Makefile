@@ -1,4 +1,6 @@
-.PHONY: dev test crawl migrate lint fmt up down up-prod down-prod
+.PHONY: dev test crawl migrate lint fmt up down up-prod down-prod \
+	collect collect-dry dedup docker-collect docker-collect-dry docker-dedup \
+	docker-collect-all
 
 # ENV_FILE selects which .env the app loads for host-side runs. The same `.env`
 # Docker Compose reads, so both paths see one set of values. Override per env:
@@ -51,6 +53,8 @@ migrate:
 	alembic upgrade head
 
 # Collect one source into the catalogue. SOURCE=nawy|property_finder
+# Host-side; needs a local venv with chromium installed for nawy. On a server,
+# use the containerised targets below instead.
 collect:
 	python scripts/collect.py --source $(SOURCE)
 
@@ -61,3 +65,21 @@ collect-dry:
 # Link the same developer/project/area across sources.
 dedup:
 	python scripts/dedup.py
+
+# Containerised collection, for hosts with no venv. Runs in the worker image,
+# which carries chromium — nawy's new-launches page is JS-rendered and the api
+# image deliberately has no browser.
+docker-collect:
+	docker compose run --rm collector python scripts/collect.py --source $(SOURCE)
+
+docker-collect-dry:
+	docker compose run --rm collector python scripts/collect.py --source $(SOURCE) --dry-run
+
+docker-dedup:
+	docker compose run --rm collector python scripts/dedup.py
+
+# Both sources, then the dedup pass they require to be meaningful.
+docker-collect-all:
+	$(MAKE) docker-collect SOURCE=property_finder
+	$(MAKE) docker-collect SOURCE=nawy
+	$(MAKE) docker-dedup

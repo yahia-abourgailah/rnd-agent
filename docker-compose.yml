@@ -42,7 +42,7 @@ services:
       target: api
     # Hostnames, not localhost: inside the network the database is `postgres`.
     # These override anything in env_file, which is written for host-side runs.
-    environment:
+    environment: &container_env
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-launch_intel}:${POSTGRES_PASSWORD:-launch_intel}@postgres:5432/${POSTGRES_DB:-launch_intel}
       DATABASE_READONLY_URL: postgresql+psycopg://launch_intel_ro:${POSTGRES_RO_PASSWORD:-ro_local_dev}@postgres:5432/${POSTGRES_DB:-launch_intel}
       REDIS_URL: redis://redis:6379/0
@@ -64,6 +64,26 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Collection, run on demand rather than served. Built from the worker target
+  # because Nawy's new-launches page is JS-rendered and needs Chromium, which
+  # the api image deliberately does not carry:
+  #
+  #   docker compose run --rm collector python scripts/collect.py --source nawy
+  #   docker compose run --rm collector python scripts/dedup.py
+  #
+  # The profile keeps it out of `docker compose up`; `run` enables it on demand.
+  collector:
+    build:
+      context: .
+      target: worker
+    profiles: ["collect"]
+    environment: *container_env
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # TODO(phase-later): enable once the dashboard is wired up against Postgres.
   # metabase:
