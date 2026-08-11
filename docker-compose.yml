@@ -78,7 +78,13 @@ services:
       context: .
       target: worker
     profiles: ["collect"]
-    environment: *container_env
+    environment:
+      <<: *container_env
+      # Each run starts a temporary Prefect server whose telemetry heartbeat
+      # writes to a SQLite file it also holds open, so it logs a "database is
+      # locked" traceback that looks like a collection failure and is not.
+      DO_NOT_TRACK: "1"
+      PREFECT_SERVER_ANALYTICS_ENABLED: "false"
     env_file:
       - .env
     depends_on:
